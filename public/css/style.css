@@ -897,3 +897,87 @@ tr.hidden {
   }
 }
 
+/* Section headers in task tables */
+.section-header {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.section-header h3 {
+  margin: 0;
+  padding: 16px;
+  font-size: 16px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.completed-section-header {
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  margin-top: 24px;
+}
+
+.completed-section-header h3 {
+  color: var(--text-secondary);
+}
+
+/* Empty state message */
+.empty-state {
+  background-color: var(--bg-light);
+}
+
+.empty-message {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* Adjust done styling */
+tr.done {
+  opacity: 0.7;
+  background-color: var(--bg-light);
+}
+
+tr.done td {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+/* Add a bit more spacing between sections for clarity */
+.completed-section-header {
+  border-top: 1px solid var(--border-light);
+}
+
+/* Collapsed section toggle (for future enhancement) */
+.section-header {
+  position: relative;
+  cursor: pointer;
+}
+
+.section-header h3 {
+  display: flex;
+  align-items: center;
+}
+
+.section-header h3::before {
+  content: '';
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd' /%3E%3C/svg%3E");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.7;
+}
+
+/* Responsive adjustments for section headers */
+@media (max-width: 768px) {
+  .section-header h3 {
+    font-size: 15px;
+  }
+  
+  .empty-message {
+    font-size: 13px;
+  }
+}

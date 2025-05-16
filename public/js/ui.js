@@ -770,7 +770,12 @@ function applyFilters(tabName) {
   const tbody = document.getElementById(`${tabName}-tbody`);
   if (!tbody) return;
   
-  const rows = tbody.querySelectorAll('tr');
+  // Skip section headers and empty message rows when filtering
+  const rows = Array.from(tbody.querySelectorAll('tr:not(.section-header):not(.empty-state)'));
+  
+  // Count visible rows for each section
+  let visibleActiveRows = 0;
+  let visibleCompletedRows = 0;
   
   // Apply filters to each row
   rows.forEach(row => {
@@ -819,7 +824,86 @@ function applyFilters(tabName) {
     
     // Show or hide the row
     row.classList.toggle('hidden', !display);
+    
+    // Count visible rows for each section
+    if (display) {
+      if (row.classList.contains('done')) {
+        visibleCompletedRows++;
+      } else {
+        visibleActiveRows++;
+      }
+    }
   });
+  
+  // Update section headers to reflect filtered counts
+  const activeHeader = tbody.querySelector('.section-header h3');
+  const completedHeader = tbody.querySelector('.completed-section-header h3');
+  
+  if (activeHeader) {
+    activeHeader.textContent = `Active Tasks (${visibleActiveRows})`;
+  }
+  
+  if (completedHeader) {
+    completedHeader.textContent = `Completed Tasks (${visibleCompletedRows})`;
+  }
+  
+  // Handle empty sections after filtering
+  const activeSectionStart = tbody.querySelector('.section-header');
+  const completedSectionStart = tbody.querySelector('.completed-section-header');
+  
+  if (activeSectionStart) {
+    // Get all rows between active section header and completed section header
+    const activeRows = Array.from(tbody.querySelectorAll('.section-header ~ tr:not(.completed-section-header):not(.hidden)'));
+    const activeRowsExist = activeRows.some(row => !row.classList.contains('section-header') && !row.classList.contains('empty-state'));
+    
+    // Check if there's already an empty message row
+    let emptyMessageRow = Array.from(tbody.querySelectorAll('.section-header ~ tr.empty-state')).find(
+      row => row.previousElementSibling === activeSectionStart || 
+             Array.from(row.previousElementSibling.classList).includes('section-header')
+    );
+    
+    if (!activeRowsExist && !emptyMessageRow) {
+      // Insert empty message row after active section header
+      const emptyRow = document.createElement('tr');
+      emptyRow.className = 'empty-state';
+      emptyRow.innerHTML = `
+        <td colspan="${tabName === 'all' || tabName === 'status' ? '6' : '5'}">
+          <div class="empty-message">No active tasks match the current filters</div>
+        </td>
+      `;
+      activeSectionStart.after(emptyRow);
+    } else if (activeRowsExist && emptyMessageRow) {
+      // Remove empty message row if there are now visible rows
+      emptyMessageRow.remove();
+    }
+  }
+  
+  if (completedSectionStart) {
+    // Get all rows after completed section header
+    const completedRows = Array.from(tbody.querySelectorAll('.completed-section-header ~ tr:not(.hidden)'));
+    const completedRowsExist = completedRows.some(row => !row.classList.contains('section-header') && !row.classList.contains('empty-state'));
+    
+    // Check if there's already an empty message row
+    let emptyMessageRow = Array.from(tbody.querySelectorAll('.completed-section-header ~ tr.empty-state')).find(
+      row => row.previousElementSibling === completedSectionStart || 
+             Array.from(row.previousElementSibling.classList).includes('completed-section-header')
+    );
+    
+    if (!completedRowsExist && !emptyMessageRow) {
+      // Insert empty message row after completed section header
+      const emptyRow = document.createElement('tr');
+      emptyRow.className = 'empty-state';
+      emptyRow.innerHTML = `
+        <td colspan="${tabName === 'all' || tabName === 'status' ? '6' : '5'}">
+          <div class="empty-message">No completed tasks match the current filters</div>
+        </td>
+      `;
+      completedSectionStart.after(emptyRow);
+    } else if (completedRowsExist && emptyMessageRow) {
+      // Remove empty message row if there are now visible rows
+      emptyMessageRow.remove();
+    }
+  }
   
   // Update tab count
   updateTabCounts();
@@ -836,19 +920,16 @@ async function toggleTaskDone(taskId, isChecked) {
       tasks[taskIndex].is_done = isChecked;
     }
     
-    // Update UI
-    document.querySelectorAll(`tr[data-task-id="${taskId}"]`).forEach(row => {
-      row.classList.toggle('done', isChecked);
-      
-      // Disable action buttons if done
-      const statusSelect = row.querySelector('.status-select');
-      if (statusSelect) {
-        statusSelect.disabled = isChecked;
-      }
-    });
+    // Instead of just updating the row style, re-render the entire tables
+    // This ensures the task moves to the correct section (active vs completed)
+    renderTasks();
     
     // Update counts
     updateStatusCounts();
+    updateTabCounts();
+    
+    // Show a notification
+    showNotification(`Task ${isChecked ? 'completed' : 'reopened'}`, 'success');
   } catch (error) {
     showNotification(`Error: ${error}`, 'error');
     
@@ -971,17 +1052,19 @@ function updateTabCounts() {
   // Update the "All" tab count
   const allTabCount = document.querySelector('.tab[data-tab="all"] .tab-count');
   if (allTabCount) {
-    allTabCount.textContent = tasks.length;
+    // Only count active (non-done) tasks for the tab badge
+    const activeTasksCount = tasks.filter(t => !t.is_done).length;
+    allTabCount.textContent = activeTasksCount;
   }
   
   // Update the status tab count
   const statusTabCount = document.querySelector('.tab[data-tab="status"] .tab-count');
   if (statusTabCount) {
-    // Count visible rows in the status tab
+    // Count visible active rows in the status tab
     const statusTbody = document.getElementById('status-tbody');
     if (statusTbody) {
-      const visibleCount = Array.from(statusTbody.querySelectorAll('tr:not(.hidden)')).length;
-      statusTabCount.textContent = visibleCount;
+      const visibleActiveRows = Array.from(statusTbody.querySelectorAll('tr:not(.section-header):not(.empty-state):not(.hidden):not(.done)')).length;
+      statusTabCount.textContent = visibleActiveRows;
     }
   }
   
@@ -989,8 +1072,9 @@ function updateTabCounts() {
   pinnedCategories.forEach(categoryId => {
     const tabCount = document.querySelector(`.tab[data-tab="category-${categoryId}"] .tab-count`);
     if (tabCount) {
-      const count = tasks.filter(t => t.category_id === categoryId).length;
-      tabCount.textContent = count;
+      // Only count active (non-done) tasks for the category badge
+      const activeCategoryTasks = tasks.filter(t => t.category_id === categoryId && !t.is_done).length;
+      tabCount.textContent = activeCategoryTasks;
     }
   });
 }
@@ -1019,6 +1103,124 @@ function showNotification(message, type = 'info') {
       container.removeChild(notification);
     }, 300);
   }, 3000);
+}
+
+// Render tasks in a specific table
+function renderTasksTable(tabName, taskList) {
+  const tbody = document.getElementById(`${tabName}-tbody`);
+  if (!tbody) return;
+  
+  // Sort tasks by display order or ID
+  const sortedTasks = [...taskList].sort((a, b) => 
+    (a.display_order || 0) - (b.display_order || 0) || a.id.localeCompare(b.id)
+  );
+  
+  // Separate active and completed tasks
+  const activeTasks = sortedTasks.filter(task => !task.is_done);
+  const completedTasks = sortedTasks.filter(task => task.is_done);
+  
+  // Generate HTML for each section
+  let tasksHTML = '';
+  
+  // Active Tasks Section
+  tasksHTML += `
+    <tr class="section-header">
+      <td colspan="${tabName === 'all' || tabName === 'status' ? '6' : '5'}">
+        <h3>Active Tasks (${activeTasks.length})</h3>
+      </td>
+    </tr>
+  `;
+  
+  // If no active tasks, show a message
+  if (activeTasks.length === 0) {
+    tasksHTML += `
+      <tr class="empty-state">
+        <td colspan="${tabName === 'all' || tabName === 'status' ? '6' : '5'}">
+          <div class="empty-message">No active tasks found</div>
+        </td>
+      </tr>
+    `;
+  } else {
+    // Render active tasks
+    tasksHTML += renderTaskRows(activeTasks, tabName);
+  }
+  
+  // Completed Tasks Section
+  tasksHTML += `
+    <tr class="section-header completed-section-header">
+      <td colspan="${tabName === 'all' || tabName === 'status' ? '6' : '5'}">
+        <h3>Completed Tasks (${completedTasks.length})</h3>
+      </td>
+    </tr>
+  `;
+  
+  // If no completed tasks, show a message
+  if (completedTasks.length === 0) {
+    tasksHTML += `
+      <tr class="empty-state">
+        <td colspan="${tabName === 'all' || tabName === 'status' ? '6' : '5'}">
+          <div class="empty-message">No completed tasks found</div>
+        </td>
+      </tr>
+    `;
+  } else {
+    // Render completed tasks
+    tasksHTML += renderTaskRows(completedTasks, tabName);
+  }
+  
+  // Update table
+  tbody.innerHTML = tasksHTML;
+}
+
+// Helper function to render task rows
+function renderTaskRows(tasks, tabName) {
+  return tasks.map(task => {
+    const status = statuses.find(s => s.id == task.status_id) || { name: 'Unknown', color: '#64748b' };
+    const statusClassName = `status-${status.name.replace(/\s+/g, '-')}`;
+    
+    // Add demo task class if this is a demo task
+    const demoClass = task.is_demo ? 'demo-task' : '';
+    
+    // Add done class if the task is completed
+    const doneClass = task.is_done ? 'done' : '';
+    
+    // Generate status options
+    const statusOptions = statuses.map(s => 
+      `<option value="${s.id}" ${s.id == task.status_id ? 'selected' : ''}>${s.name}</option>`
+    ).join('');
+    
+    // Base row HTML
+    const rowHTML = `
+      <tr data-task-id="${task.id}" data-category-id="${task.category_id}" data-status-id="${task.status_id}" class="${doneClass} ${demoClass}">
+        <td>
+          <input type="checkbox" class="done-checkbox" data-task-id="${task.id}" 
+                 ${task.is_done ? 'checked' : ''} 
+                 onchange="toggleTaskDone('${task.id}', this.checked)">
+        </td>
+        <td class="task-id">${task.id}</td>
+        <td>${task.description}</td>
+        ${tabName === 'all' || tabName === 'status' ? `<td>${task.category_name || 'Unknown'}</td>` : ''}
+        <td><span class="status-badge ${statusClassName}">${status.name}</span></td>
+        <td class="actions">
+          <select class="status-select" data-task-id="${task.id}" 
+                  onchange="changeTaskStatus('${task.id}', this.value)"
+                  ${task.is_done ? 'disabled' : ''}>
+            ${statusOptions}
+          </select>
+          <div class="task-actions">
+            <button class="action-btn edit-btn" onclick="showTaskModal('${task.id}')" title="Edit Task">
+              <i class="fas fa-pencil"></i>
+            </button>
+            <button class="action-btn delete-btn" onclick="deleteTask('${task.id}')" title="Delete Task">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+    
+    return rowHTML;
+  }).join('');
 }
 
 // Load data from API and update UI
@@ -1120,66 +1322,6 @@ function renderTasks() {
     const categoryTasks = tasks.filter(t => t.category_id === categoryId);
     renderTasksTable(`category-${categoryId}`, categoryTasks);
   });
-}
-
-// Render tasks in a specific table
-function renderTasksTable(tabName, taskList) {
-  const tbody = document.getElementById(`${tabName}-tbody`);
-  if (!tbody) return;
-  
-  // Sort tasks by display order or ID
-  const sortedTasks = [...taskList].sort((a, b) => 
-    (a.display_order || 0) - (b.display_order || 0) || a.id.localeCompare(b.id)
-  );
-  
-  // Generate HTML for each task
-  const tasksHTML = sortedTasks.map(task => {
-    const status = statuses.find(s => s.id == task.status_id) || { name: 'Unknown', color: '#64748b' };
-    const statusClassName = `status-${status.name.replace(/\s+/g, '-')}`;
-    
-    // Add demo task class if this is a demo task
-    const demoClass = task.is_demo ? 'demo-task' : '';
-    
-    // Generate status options
-    const statusOptions = statuses.map(s => 
-      `<option value="${s.id}" ${s.id == task.status_id ? 'selected' : ''}>${s.name}</option>`
-    ).join('');
-    
-    // Base row HTML
-    const rowHTML = `
-      <tr data-task-id="${task.id}" data-category-id="${task.category_id}" data-status-id="${task.status_id}" class="${task.is_done ? 'done' : ''} ${demoClass}">
-        <td>
-          <input type="checkbox" class="done-checkbox" data-task-id="${task.id}" 
-                 ${task.is_done ? 'checked' : ''} 
-                 onchange="toggleTaskDone('${task.id}', this.checked)">
-        </td>
-        <td class="task-id">${task.id}</td>
-        <td>${task.description}</td>
-        ${tabName === 'all' || tabName === 'status' ? `<td>${task.category_name || 'Unknown'}</td>` : ''}
-        <td><span class="status-badge ${statusClassName}">${status.name}</span></td>
-        <td class="actions">
-          <select class="status-select" data-task-id="${task.id}" 
-                  onchange="changeTaskStatus('${task.id}', this.value)"
-                  ${task.is_done ? 'disabled' : ''}>
-            ${statusOptions}
-          </select>
-          <div class="task-actions">
-            <button class="action-btn edit-btn" onclick="showTaskModal('${task.id}')" title="Edit Task">
-              <i class="fas fa-pencil"></i>
-            </button>
-            <button class="action-btn delete-btn" onclick="deleteTask('${task.id}')" title="Delete Task">
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-    
-    return rowHTML;
-  }).join('');
-  
-  // Update table
-  tbody.innerHTML = tasksHTML;
 }
 
 // Toggle demo mode
