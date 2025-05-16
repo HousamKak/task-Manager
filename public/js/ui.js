@@ -12,6 +12,7 @@ let currentTaskId = null;
 let currentCategoryId = null;
 let currentStatusId = null;
 let pinnedCategories = []; // Stores IDs of categories pinned to the tab bar
+let demoModeActive = false;
 
 // Initialize the UI components
 function initUI() {
@@ -79,6 +80,12 @@ function initUI() {
       applyFilters(currentTab);
     });
   });
+  
+  // Initialize demo mode button
+  const demoModeBtn = document.getElementById('demo-mode-btn');
+  if (demoModeBtn) {
+    demoModeBtn.addEventListener('click', toggleDemoMode);
+  }
 }
 
 // Switch between tabs
@@ -371,11 +378,19 @@ function showTaskModal(taskId = null) {
       document.getElementById('task-status').value = task.status_id;
       document.getElementById('task-priority').value = task.priority || 3;
       document.getElementById('task-notes').value = task.notes || '';
+      
+      // If the task being edited is a demo task, show a warning
+      if (task.is_demo) {
+        document.getElementById('demo-task-warning').style.display = 'block';
+      } else {
+        document.getElementById('demo-task-warning').style.display = 'none';
+      }
     }
   } else {
     currentTaskId = null;
     modalTitle.textContent = 'Add New Task';
     document.getElementById('task-id').disabled = false;
+    document.getElementById('demo-task-warning').style.display = 'none';
     
     // Generate next task ID
     const cmintdevIds = tasks
@@ -490,7 +505,8 @@ async function handleTaskFormSubmit(event) {
       category_id: parseInt(document.getElementById('task-category').value, 10),
       status_id: parseInt(document.getElementById('task-status').value, 10),
       priority: parseInt(document.getElementById('task-priority').value, 10),
-      notes: document.getElementById('task-notes').value
+      notes: document.getElementById('task-notes').value,
+      is_demo: demoModeActive // Mark as demo task if demo mode is active
     };
     
     if (currentTaskId) {
@@ -504,7 +520,7 @@ async function handleTaskFormSubmit(event) {
     }
     
     // Refresh data and UI
-    loadData();
+    loadData(demoModeActive);
     closeTaskModal();
   } catch (error) {
     showNotification(`Error: ${error}`, 'error');
@@ -533,7 +549,7 @@ async function handleCategoryFormSubmit(event) {
     }
     
     // Refresh data and UI
-    loadData();
+    loadData(demoModeActive);
     closeCategoryModal();
   } catch (error) {
     showNotification(`Error: ${error}`, 'error');
@@ -561,7 +577,7 @@ async function handleStatusFormSubmit(event) {
     }
     
     // Refresh data and UI
-    loadData();
+    loadData(demoModeActive);
     closeStatusModal();
   } catch (error) {
     showNotification(`Error: ${error}`, 'error');
@@ -637,7 +653,7 @@ async function deleteCategory(categoryId) {
     }
     
     showNotification('Category deleted successfully', 'success');
-    loadData();
+    loadData(demoModeActive);
   } catch (error) {
     showNotification(`Error: ${error}`, 'error');
   }
@@ -652,7 +668,7 @@ async function deleteStatus(statusId) {
   try {
     await API.statuses.delete(statusId);
     showNotification('Status deleted successfully', 'success');
-    loadData();
+    loadData(demoModeActive);
   } catch (error) {
     showNotification(`Error: ${error}`, 'error');
   }
@@ -661,7 +677,7 @@ async function deleteStatus(statusId) {
 // Export data as JSON
 function exportData() {
   const data = {
-    tasks,
+    tasks: tasks.filter(t => !t.is_demo), // Don't export demo tasks
     categories,
     statuses,
     pinnedCategories
@@ -699,7 +715,7 @@ function importData() {
           // TODO: Implement server-side import API
           // For now, we'll just display a success message
           showNotification('Data imported successfully', 'success');
-          loadData();
+          loadData(demoModeActive);
         }
       } catch (error) {
         showNotification(`Error importing data: ${error}`, 'error');
@@ -881,7 +897,21 @@ async function changeTaskStatus(taskId, statusId) {
 
 // Delete a task
 async function deleteTask(taskId) {
-  if (!confirm(`Are you sure you want to delete task ${taskId}? This cannot be undone.`)) {
+  const task = tasks.find(t => t.id === taskId);
+  
+  if (!task) {
+    showNotification('Task not found', 'error');
+    return;
+  }
+  
+  let confirmMessage = `Are you sure you want to delete task ${taskId}? This cannot be undone.`;
+  
+  // Additional warning for demo tasks
+  if (task.is_demo) {
+    confirmMessage = `This is a demo task. ${confirmMessage}`;
+  }
+  
+  if (!confirm(confirmMessage)) {
     return;
   }
   
@@ -992,8 +1022,14 @@ function showNotification(message, type = 'info') {
 }
 
 // Load data from API and update UI
-async function loadData() {
+async function loadData(includeDemoTasks = false) {
   try {
+    // Update demo mode status
+    demoModeActive = includeDemoTasks;
+    
+    // Add or remove demo mode class from body
+    document.body.classList.toggle('demo-mode', demoModeActive);
+    
     // Load pinned categories from localStorage
     const savedPinnedCategories = localStorage.getItem('pinnedCategories');
     if (savedPinnedCategories) {
@@ -1007,7 +1043,7 @@ async function loadData() {
     const [categoriesData, statusesData, tasksData] = await Promise.all([
       API.categories.getAll(),
       API.statuses.getAll(),
-      API.tasks.getAll()
+      API.tasks.getAll({ includeDemoTasks: includeDemoTasks })
     ]);
     
     categories = categoriesData;
@@ -1026,6 +1062,12 @@ async function loadData() {
     // If we're on the categories tab, render the category manager
     if (currentTab === 'categories') {
       renderCategoryManager();
+    }
+    
+    // Update demo mode toggle in settings
+    const demoToggle = document.getElementById('demo-mode-toggle');
+    if (demoToggle) {
+      demoToggle.checked = demoModeActive;
     }
   } catch (error) {
     showNotification(`Error loading data: ${error}`, 'error');
@@ -1095,6 +1137,9 @@ function renderTasksTable(tabName, taskList) {
     const status = statuses.find(s => s.id == task.status_id) || { name: 'Unknown', color: '#64748b' };
     const statusClassName = `status-${status.name.replace(/\s+/g, '-')}`;
     
+    // Add demo task class if this is a demo task
+    const demoClass = task.is_demo ? 'demo-task' : '';
+    
     // Generate status options
     const statusOptions = statuses.map(s => 
       `<option value="${s.id}" ${s.id == task.status_id ? 'selected' : ''}>${s.name}</option>`
@@ -1102,7 +1147,7 @@ function renderTasksTable(tabName, taskList) {
     
     // Base row HTML
     const rowHTML = `
-      <tr data-task-id="${task.id}" data-category-id="${task.category_id}" data-status-id="${task.status_id}" class="${task.is_done ? 'done' : ''}">
+      <tr data-task-id="${task.id}" data-category-id="${task.category_id}" data-status-id="${task.status_id}" class="${task.is_done ? 'done' : ''} ${demoClass}">
         <td>
           <input type="checkbox" class="done-checkbox" data-task-id="${task.id}" 
                  ${task.is_done ? 'checked' : ''} 
@@ -1137,6 +1182,16 @@ function renderTasksTable(tabName, taskList) {
   tbody.innerHTML = tasksHTML;
 }
 
+// Toggle demo mode
+function toggleDemoMode() {
+  const demoToggle = document.getElementById('demo-mode-toggle');
+  if (demoToggle) {
+    demoToggle.checked = !demoToggle.checked;
+    // Trigger the change event
+    demoToggle.dispatchEvent(new Event('change'));
+  }
+}
+
 // Export UI functions for global access
 const ui = {
   initUI,
@@ -1155,7 +1210,8 @@ const ui = {
   updateIconPreview,
   togglePinCategory,
   loadData,
-  showNotification
+  showNotification,
+  toggleDemoMode
 };
 
 window.ui = ui;

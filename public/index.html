@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/demo-mode.css">
 </head>
 <body>
     <div class="dashboard">
@@ -164,6 +165,19 @@
             <!-- Settings tab -->
             <div id="settings-content" class="tab-content">
                 <div class="settings-container">
+                    <!-- Demo Mode Toggle -->
+                    <div class="settings-section">
+                        <h2>Demo Mode</h2>
+                        <div class="demo-toggle-container">
+                            <label class="switch">
+                                <input type="checkbox" id="demo-mode-toggle">
+                                <span class="slider"></span>
+                            </label>
+                            <label for="demo-mode-toggle">Enable Demo Mode</label>
+                        </div>
+                        <p>Demo mode allows you to experiment with sample tasks without affecting your actual data.</p>
+                    </div>
+                    
                     <div class="settings-section">
                         <h2>Categories</h2>
                         <div class="settings-list" id="categories-list">
@@ -198,9 +212,6 @@
                             <button id="import-data-btn" class="btn btn-secondary">
                                 <i class="fas fa-upload"></i> Import Data
                             </button>
-                            <button id="load-demo-btn" class="btn btn-secondary">
-                                <i class="fas fa-vial"></i> Load Demo Data
-                            </button>
                             <button id="clear-data-btn" class="btn btn-danger">
                                 <i class="fas fa-trash"></i> Clear All Data
                             </button>
@@ -216,6 +227,12 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2 id="modal-title">Add New Task</h2>
+            
+            <!-- Demo task warning -->
+            <div id="demo-task-warning">
+                <i class="fas fa-exclamation-circle"></i> This is a demo task. Changes made to this task will be lost when demo mode is turned off.
+            </div>
+            
             <form id="task-form">
                 <div class="form-group">
                     <label for="task-id">Task ID:</label>
@@ -328,20 +345,5 @@
     <script src="/js/api.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/app.js"></script>
-    
-    <!-- Added data management button handlers -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add event listener for load demo data button
-            document.getElementById('load-demo-btn').addEventListener('click', function() {
-                window.loadDemoData();
-            });
-            
-            // Add event listener for clear data button
-            document.getElementById('clear-data-btn').addEventListener('click', function() {
-                window.clearAllData();
-            });
-        });
-    </script>
 </body>
 </html>

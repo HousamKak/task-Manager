@@ -15,9 +15,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Task Routes
 app.get('/api/tasks', async (req, res) => {
   try {
-    const { category, status, search, done } = req.query;
-    const tasks = await db.getTasks(category, status, search, done);
+    const { category, status, search, done, includeDemoTasks } = req.query;
+    
+    // Simply call getTasks normally now
+    const tasks = await db.getTasks(category, status, search, done, includeDemoTasks === 'true');
     res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Demo task routes
+app.get('/api/tasks/demo', async (req, res) => {
+  try {
+    const demoTasks = await db.getDemoTasks();
+    res.json(demoTasks);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -37,14 +49,14 @@ app.get('/api/tasks/:id', async (req, res) => {
 
 app.post('/api/tasks', async (req, res) => {
   try {
-    const { id, description, category_id, status_id, notes, priority } = req.body;
+    const { id, description, category_id, status_id, notes, priority, is_demo } = req.body;
     
     // Validate required fields
     if (!id || !description || !category_id || !status_id) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
-    const taskId = await db.createTask(id, description, category_id, status_id, notes, priority);
+    const taskId = await db.createTask(id, description, category_id, status_id, notes, priority, is_demo);
     const task = await db.getTaskById(taskId);
     res.status(201).json(task);
   } catch (err) {
@@ -296,110 +308,26 @@ app.get('/api/history/task/:id', async (req, res) => {
 // Demo Data Routes
 app.post('/api/demo/load', async (req, res) => {
   try {
-    // Sample tasks with default categories and statuses
-    const demoTasks = [
-      {
-        id: 'CMINTDEV-242',
-        description: 'Set up anti-virus for EC2 servers',
-        category_id: 1, // Infrastructure & Cloud
-        status_id: 4,   // DEV ONGOING
-        priority: 2,
-        notes: 'Need to research compatible options for our EC2 setup'
-      },
-      {
-        id: 'CMINTDEV-32',
-        description: 'OMV hardware inventory',
-        category_id: 1, // Infrastructure & Cloud
-        status_id: 4,   // DEV ONGOING
-        priority: 3,
-        notes: 'Document all hardware specs and serial numbers'
-      },
-      {
-        id: 'CMINTDEV-271',
-        description: 'Set up HTTPS license for OVTime',
-        category_id: 1, // Infrastructure & Cloud
-        status_id: 3,   // TO DO
-        priority: 1,
-        notes: 'Current certificate expires next month'
-      },
-      {
-        id: 'CMINTDEV-23',
-        description: 'Review security groups open ports',
-        category_id: 2, // Security & Access Control
-        status_id: 1,   // BACKLOG
-        priority: 3
-      },
-      {
-        id: 'CMINTDEV-33',
-        description: 'Routine security review',
-        category_id: 2, // Security & Access Control
-        status_id: 2,   // ON HOLD
-        priority: 2,
-        notes: 'Waiting for new security policy to be approved'
-      },
-      {
-        id: 'CMINTDEV-215',
-        description: 'Create company privacy policy',
-        category_id: 3, // Training & Documentation
-        status_id: 4,   // DEV ONGOING
-        priority: 2,
-        notes: 'Draft ready for review by legal team'
-      },
-      {
-        id: 'CMINTDEV-216',
-        description: 'Create company information security policy',
-        category_id: 3, // Training & Documentation
-        status_id: 4,   // DEV ONGOING
-        priority: 2,
-        notes: 'Working with security team on requirements'
-      },
-      {
-        id: 'CMINTDEV-8',
-        description: 'Put a plan for cross training/backup for all dev projects',
-        category_id: 5, // Business Process
-        status_id: 4,   // DEV ONGOING
-        priority: 2,
-        notes: 'Identify critical projects and single points of knowledge'
-      },
-      {
-        id: 'CMINTDEV-319',
-        description: 'Review AWS bill and suggest ways to reduce costs',
-        category_id: 6, // Research & Optimization
-        status_id: 4,   // DEV ONGOING
-        priority: 3,
-        notes: 'Focus on unused resources and right-sizing instances'
-      }
-    ];
-    
-    // Create each task (will skip if task ID already exists)
-    for (const task of demoTasks) {
-      try {
-        // Check if task already exists
-        const existingTask = await db.getTaskById(task.id);
-        if (!existingTask) {
-          await db.createTask(
-            task.id, 
-            task.description, 
-            task.category_id, 
-            task.status_id, 
-            task.notes, 
-            task.priority
-          );
-        }
-      } catch (err) {
-        console.warn(`Warning: Could not create demo task ${task.id}: ${err.message}`);
-      }
-    }
-    
-    res.json({ success: true, message: 'Demo data loaded successfully' });
+    const result = await db.createDemoData();
+    res.json(result);
   } catch (err) {
     console.error('Error loading demo data:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Clear all data (DANGEROUS - for testing only)
 app.post('/api/demo/clear', async (req, res) => {
+  try {
+    const result = await db.deleteDemoTasks();
+    res.json({ success: true, message: 'Demo data cleared successfully' });
+  } catch (err) {
+    console.error('Error clearing demo data:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Clear all data (DANGEROUS - for testing only)
+app.post('/api/data/clear', async (req, res) => {
   try {
     // Delete all tasks and their history
     await db.clearAllData();

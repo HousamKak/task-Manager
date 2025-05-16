@@ -1,15 +1,43 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
+
+// Path to the database file
+const dbPath = path.join(__dirname, 'taskmanagement.db');
 
 // Create database connection
-const dbPath = path.join(__dirname, 'taskmanagement.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error connecting to database:', err.message);
-  } else {
-    console.log('Connected to the SQLite database');
+let db;
+
+// Initialize database connection
+function initializeConnection() {
+  // Check if the database exists, if not, create it
+  const dbExists = fs.existsSync(dbPath);
+  
+  if (!dbExists) {
+    console.log('Database file not found, creating empty file...');
+    fs.writeFileSync(dbPath, '');
   }
-});
+  
+  // Create or open the database connection
+  db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error('Error connecting to database:', err.message);
+    } else {
+      console.log('Connected to the SQLite database');
+      
+      // If database was just created, initialize its structure
+      if (!dbExists) {
+        console.log('Initializing database structure...');
+        checkAndInitDb().catch(err => {
+          console.error('Database initialization error:', err.message);
+        });
+      }
+    }
+  });
+}
+
+// Call this immediately to establish the connection
+initializeConnection();
 
 // Helper function to run queries with promises
 function run(query, params = []) {
@@ -95,6 +123,7 @@ async function initDb() {
       notes TEXT,
       priority INTEGER DEFAULT 3,
       display_order INTEGER,
+      is_demo BOOLEAN DEFAULT 0,
       FOREIGN KEY (category_id) REFERENCES categories (id),
       FOREIGN KEY (status_id) REFERENCES statuses (id)
     )
@@ -161,7 +190,11 @@ async function setSetting(key, value) {
 }
 
 // Task operations
-async function getTasks(categoryId, statusId, searchTerm, isDone) {
+async function getTasks(categoryId, statusId, searchTerm, isDone, includeDemoTasks = false) {
+  // Check if is_demo column exists
+  const columns = await all("PRAGMA table_info(tasks)");
+  const hasDemoColumn = columns.some(col => col.name === 'is_demo');
+  
   let query = `
     SELECT t.*, c.name as category_name, s.name as status_name 
     FROM tasks t
@@ -193,9 +226,35 @@ async function getTasks(categoryId, statusId, searchTerm, isDone) {
     params.push(isDone === 'true' ? 1 : 0);
   }
   
+  // Filter out demo tasks unless explicitly requested (only if column exists)
+  if (hasDemoColumn && !includeDemoTasks) {
+    query += ` AND (t.is_demo = 0 OR t.is_demo IS NULL)`;
+  }
+  
   query += ' ORDER BY t.display_order ASC, t.id ASC';
   
   return await all(query, params);
+}
+
+// Get only demo tasks
+async function getDemoTasks() {
+  // Check if is_demo column exists
+  const columns = await all("PRAGMA table_info(tasks)");
+  const hasDemoColumn = columns.some(col => col.name === 'is_demo');
+  
+  if (hasDemoColumn) {
+    return await all(`
+      SELECT t.*, c.name as category_name, s.name as status_name 
+      FROM tasks t
+      LEFT JOIN categories c ON t.category_id = c.id
+      LEFT JOIN statuses s ON t.status_id = s.id
+      WHERE t.is_demo = 1
+      ORDER BY t.display_order ASC, t.id ASC
+    `);
+  } else {
+    // If column doesn't exist yet, return empty array
+    return [];
+  }
 }
 
 async function getTaskById(id) {
@@ -208,7 +267,7 @@ async function getTaskById(id) {
   `, [id]);
 }
 
-async function createTask(id, description, categoryId, statusId, notes, priority) {
+async function createTask(id, description, categoryId, statusId, notes, priority, isDemo = false) {
   // Check if task already exists
   const existingTask = await get('SELECT id FROM tasks WHERE id = ?', [id]);
   if (existingTask) {
@@ -219,10 +278,21 @@ async function createTask(id, description, categoryId, statusId, notes, priority
   const maxOrder = await get('SELECT MAX(display_order) as max_order FROM tasks');
   const displayOrder = (maxOrder.max_order || 0) + 10; // Increment by 10 to allow reordering
   
-  await run(`
-    INSERT INTO tasks(id, description, category_id, status_id, notes, priority, display_order) 
-    VALUES(?, ?, ?, ?, ?, ?, ?)
-  `, [id, description, categoryId, statusId, notes, priority || 3, displayOrder]);
+  // Check if is_demo column exists
+  const columns = await all("PRAGMA table_info(tasks)");
+  const hasDemoColumn = columns.some(col => col.name === 'is_demo');
+  
+  if (hasDemoColumn) {
+    await run(`
+      INSERT INTO tasks(id, description, category_id, status_id, notes, priority, display_order, is_demo) 
+      VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+    `, [id, description, categoryId, statusId, notes, priority || 3, displayOrder, isDemo ? 1 : 0]);
+  } else {
+    await run(`
+      INSERT INTO tasks(id, description, category_id, status_id, notes, priority, display_order) 
+      VALUES(?, ?, ?, ?, ?, ?, ?)
+    `, [id, description, categoryId, statusId, notes, priority || 3, displayOrder]);
+  }
   
   // Add initial status to history
   await addTaskHistory(id, statusId, 'Task created');
@@ -280,6 +350,25 @@ async function updateTask(id, description, categoryId, statusId, isDone, notes, 
 
 async function deleteTask(id) {
   await run('DELETE FROM tasks WHERE id = ?', [id]);
+}
+
+async function deleteDemoTasks() {
+  // Check if is_demo column exists
+  const columns = await all("PRAGMA table_info(tasks)");
+  const hasDemoColumn = columns.some(col => col.name === 'is_demo');
+  
+  if (hasDemoColumn) {
+    // First delete task history for demo tasks
+    await run(`
+      DELETE FROM task_history 
+      WHERE task_id IN (SELECT id FROM tasks WHERE is_demo = 1)
+    `);
+    
+    // Then delete the demo tasks
+    await run('DELETE FROM tasks WHERE is_demo = 1');
+  }
+  
+  return { message: 'All demo tasks removed successfully' };
 }
 
 async function addTaskHistory(taskId, statusId, notes = null) {
@@ -357,7 +446,7 @@ async function deleteCategory(id) {
 }
 
 async function getTasksCountByCategory(categoryId) {
-  const result = await get('SELECT COUNT(*) as count FROM tasks WHERE category_id = ?', [categoryId]);
+  const result = await get('SELECT COUNT(*) as count FROM tasks WHERE category_id = ? AND (is_demo = 0 OR is_demo IS NULL)', [categoryId]);
   return result.count;
 }
 
@@ -413,8 +502,112 @@ async function deleteStatus(id) {
 }
 
 async function getTasksCountByStatus(statusId) {
-  const result = await get('SELECT COUNT(*) as count FROM tasks WHERE status_id = ?', [statusId]);
+  const result = await get('SELECT COUNT(*) as count FROM tasks WHERE status_id = ? AND (is_demo = 0 OR is_demo IS NULL)', [statusId]);
   return result.count;
+}
+
+// Create demo data without affecting the main task list
+async function createDemoData() {
+  // Sample demo tasks
+  const demoTasks = [
+    {
+      id: 'DEMO-001',
+      description: 'Set up anti-virus for EC2 servers',
+      category_id: 1, // Infrastructure & Cloud
+      status_id: 4,   // DEV ONGOING
+      priority: 2,
+      notes: 'Need to research compatible options for our EC2 setup'
+    },
+    {
+      id: 'DEMO-002',
+      description: 'OMV hardware inventory',
+      category_id: 1, // Infrastructure & Cloud
+      status_id: 4,   // DEV ONGOING
+      priority: 3,
+      notes: 'Document all hardware specs and serial numbers'
+    },
+    {
+      id: 'DEMO-003',
+      description: 'Set up HTTPS license for OVTime',
+      category_id: 1, // Infrastructure & Cloud
+      status_id: 3,   // TO DO
+      priority: 1,
+      notes: 'Current certificate expires next month'
+    },
+    {
+      id: 'DEMO-004',
+      description: 'Review security groups open ports',
+      category_id: 2, // Security & Access Control
+      status_id: 1,   // BACKLOG
+      priority: 3
+    },
+    {
+      id: 'DEMO-005',
+      description: 'Routine security review',
+      category_id: 2, // Security & Access Control
+      status_id: 2,   // ON HOLD
+      priority: 2,
+      notes: 'Waiting for new security policy to be approved'
+    },
+    {
+      id: 'DEMO-006',
+      description: 'Create company privacy policy',
+      category_id: 3, // Training & Documentation
+      status_id: 4,   // DEV ONGOING
+      priority: 2,
+      notes: 'Draft ready for review by legal team'
+    },
+    {
+      id: 'DEMO-007',
+      description: 'Create company information security policy',
+      category_id: 3, // Training & Documentation
+      status_id: 4,   // DEV ONGOING
+      priority: 2,
+      notes: 'Working with security team on requirements'
+    },
+    {
+      id: 'DEMO-008',
+      description: 'Put a plan for cross training/backup for all dev projects',
+      category_id: 5, // Business Process
+      status_id: 4,   // DEV ONGOING
+      priority: 2,
+      notes: 'Identify critical projects and single points of knowledge'
+    },
+    {
+      id: 'DEMO-009',
+      description: 'Review AWS bill and suggest ways to reduce costs',
+      category_id: 6, // Research & Optimization
+      status_id: 4,   // DEV ONGOING
+      priority: 3,
+      notes: 'Focus on unused resources and right-sizing instances'
+    }
+  ];
+  
+  // Delete any existing demo tasks first
+  await deleteDemoTasks();
+  
+  // Create each demo task
+  for (const task of demoTasks) {
+    try {
+      await createTask(
+        task.id, 
+        task.description, 
+        task.category_id, 
+        task.status_id, 
+        task.notes, 
+        task.priority,
+        true // Mark as demo task
+      );
+    } catch (err) {
+      console.warn(`Warning: Could not create demo task ${task.id}: ${err.message}`);
+    }
+  }
+  
+  return { 
+    success: true, 
+    message: 'Demo data loaded successfully', 
+    count: demoTasks.length 
+  };
 }
 
 // Clear all data (DANGEROUS - for testing only)
@@ -424,6 +617,38 @@ async function clearAllData() {
   // Don't delete categories and statuses to keep the default ones
   
   console.log('All data cleared successfully');
+}
+
+// Check if a column exists in a table
+async function columnExists(tableName, columnName) {
+  try {
+    const columns = await all(`PRAGMA table_info(${tableName})`);
+    return columns.some(column => column.name === columnName);
+  } catch (err) {
+    console.error(`Error checking if column ${columnName} exists in ${tableName}:`, err);
+    return false;
+  }
+}
+
+// Run database migrations for existing databases
+async function runMigrations() {
+  console.log('Checking for database migrations...');
+  
+  try {
+    // Migration 1: Add is_demo column to tasks table if it doesn't exist
+    const hasDemoColumn = await columnExists('tasks', 'is_demo');
+    if (!hasDemoColumn) {
+      console.log('Adding is_demo column to tasks table...');
+      await run('ALTER TABLE tasks ADD COLUMN is_demo BOOLEAN DEFAULT 0');
+      console.log('Migration complete: Added is_demo column');
+    }
+    
+    // Set migration version
+    await setSetting('db_migration_version', '1');
+    
+  } catch (err) {
+    console.error('Error running migrations:', err);
+  }
 }
 
 // Initialize the database on module load
@@ -436,6 +661,8 @@ async function checkAndInitDb() {
       await initDb();
     } else {
       console.log('Database already initialized');
+      // Run migrations for existing databases
+      await runMigrations();
     }
   } catch (err) {
     // If there's an error (like the settings table doesn't exist yet), initialize
@@ -444,19 +671,16 @@ async function checkAndInitDb() {
   }
 }
 
-// Run initialization check
-checkAndInitDb().catch(err => {
-  console.error('Database initialization error:', err.message);
-});
-
 // Export database functions
 module.exports = {
   // Task operations
   getTasks,
+  getDemoTasks,
   getTaskById,
   createTask,
   updateTask,
   deleteTask,
+  deleteDemoTasks,
   addTaskHistory,
   getTaskHistory,
   deleteTaskHistory,
@@ -481,9 +705,13 @@ module.exports = {
   getSetting,
   setSetting,
   
+  // Demo operations
+  createDemoData,
+  
   // Data management
   clearAllData,
   
   // Initialization
-  initDb
+  initDb,
+  checkAndInitDb
 };

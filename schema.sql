@@ -1,5 +1,6 @@
 -- SQLite schema for task management system
--- This is for reference - the actual schema is created in db.js
+-- This is for reference only - the actual schema is created in db.js
+-- Use this file to understand the database structure, not to create it
 
 -- Categories table
 CREATE TABLE IF NOT EXISTS categories (
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   notes TEXT,
   priority INTEGER DEFAULT 3,
   display_order INTEGER,
+  is_demo BOOLEAN DEFAULT 0,  -- Indicates if this is a demo task
   FOREIGN KEY (category_id) REFERENCES categories (id),
   FOREIGN KEY (status_id) REFERENCES statuses (id)
 );
@@ -40,8 +42,16 @@ CREATE TABLE IF NOT EXISTS task_history (
   task_id TEXT,
   status_id INTEGER,
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  notes TEXT,
   FOREIGN KEY (task_id) REFERENCES tasks (id),
   FOREIGN KEY (status_id) REFERENCES statuses (id)
+);
+
+-- Settings table for app configuration
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Default categories

@@ -44,6 +44,15 @@ window.API = (function() {
     ]).then(handleResponse);
   }
 
+  // Helper function to build query string
+  function buildQueryString(params = {}) {
+    const queryParams = Object.entries(params)
+      .filter(([_, value]) => value !== undefined && value !== null)
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+    
+    return queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+  }
+
   // API endpoints object to return
   return {
     // Set the API base URL - useful for testing or changing environments
@@ -57,8 +66,12 @@ window.API = (function() {
     // Task endpoints
     tasks: {
       getAll: function(params = {}) {
-        const queryString = new URLSearchParams(params).toString();
-        return fetchWithTimeout(`${API_BASE_URL}/tasks${queryString ? '?' + queryString : ''}`);
+        const queryString = buildQueryString(params);
+        return fetchWithTimeout(`${API_BASE_URL}/tasks${queryString}`);
+      },
+      // Get demo tasks
+      getDemoTasks: function() {
+        return fetchWithTimeout(`${API_BASE_URL}/tasks/demo`);
       },
       getById: function(id) {
         return fetchWithTimeout(`${API_BASE_URL}/tasks/${id}`);
@@ -147,6 +160,16 @@ window.API = (function() {
     history: {
       getTaskHistory: function(taskId) {
         return fetchWithTimeout(`${API_BASE_URL}/history/task/${taskId}`);
+      }
+    },
+    
+    // Demo data endpoints
+    demo: {
+      loadDemoData: function() {
+        return fetchWithTimeout(`${API_BASE_URL}/demo/load`, { method: 'POST' });
+      },
+      clearDemoData: function() {
+        return fetchWithTimeout(`${API_BASE_URL}/demo/clear`, { method: 'POST' });
       }
     },
     
