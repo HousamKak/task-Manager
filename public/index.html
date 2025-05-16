@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Committee Backlog</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <h1>Tech Committee Backlog</h1>
+
+        <div class="stats-container">
+            <div class="stat-card" data-status="" style="cursor: pointer;">
+                <h3>Total Tasks</h3>
+                <div class="count" id="total-count">
+                    <span class="current-count">0</span>
+                </div>
+            </div>
+            <div class="stat-card" data-status="DEV ONGOING" style="cursor: pointer;">
+                <h3>Dev Ongoing</h3>
+                <div class="count" id="dev-ongoing-count">
+                    <span class="current-count">0</span>
+                </div>
+            </div>
+            <div class="stat-card" data-status="TO DO" style="cursor: pointer;">
+                <h3>To Do</h3>
+                <div class="count" id="to-do-count">
+                    <span class="current-count">0</span>
+                </div>
+            </div>
+            <div class="stat-card" data-status="ON HOLD" style="cursor: pointer;">
+                <h3>On Hold</h3>
+                <div class="count" id="on-hold-count">
+                    <span class="current-count">0</span>
+                </div>
+            </div>
+            <div class="stat-card" data-status="BACKLOG" style="cursor: pointer;">
+                <h3>Backlog</h3>
+                <div class="count" id="backlog-count">
+                    <span class="current-count">0</span>
+                </div>
+            </div>
+            <div class="stat-card add-task-card" id="add-task-btn">
+                <h3>New Task</h3>
+                <div class="add-icon">+</div>
+            </div>
+        </div>
+        
+        <div class="tabs-container">
+            <button class="tab active" data-tab="all">
+                All Tasks
+                <span class="tab-count">0</span>
+            </button>
+            <!-- Pinned category tabs will be added dynamically -->
+            <button class="tab" data-tab="status">
+                By Status
+                <span class="tab-count">0</span>
+            </button>
+            <button class="tab settings" data-tab="settings">
+                <i class="fas fa-cog"></i>
+            </button>
+            <button class="tab categories-tab" data-tab="categories">
+                <i class="fas fa-folder"></i>
+                <span>Categories</span>
+            </button>
+        </div>
+        
+        <div class="table-container">
+            <div id="all-content" class="tab-content active">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Done</th>
+                            <th>Task ID</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                        <tr class="filter-row">
+                            <th>
+                                <select class="filter-select filter-done" data-filter="done">
+                                    <option value="">All</option>
+                                    <option value="1">Done</option>
+                                    <option value="0">Not Done</option>
+                                </select>
+                            </th>
+                            <th><input type="text" class="filter-input" data-filter="id" placeholder="Filter..."></th>
+                            <th><input type="text" class="filter-input" data-filter="description" placeholder="Filter..."></th>
+                            <th>
+                                <select class="filter-select" data-filter="category">
+                                    <option value="">All</option>
+                                    <!-- Categories will be populated dynamically -->
+                                </select>
+                            </th>
+                            <th>
+                                <select class="filter-select" data-filter="status">
+                                    <option value="">All</option>
+                                    <!-- Statuses will be populated dynamically -->
+                                </select>
+                            </th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-tbody">
+                        <!-- Tasks will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Category tabs and content will be created dynamically -->
+            
+            <!-- Status tab -->
+            <div id="status-content" class="tab-content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Done</th>
+                            <th>Task ID</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                        <tr class="filter-row">
+                            <th>
+                                <select class="filter-select filter-done" data-filter="done">
+                                    <option value="">All</option>
+                                    <option value="1">Done</option>
+                                    <option value="0">Not Done</option>
+                                </select>
+                            </th>
+                            <th><input type="text" class="filter-input" data-filter="id" placeholder="Filter..."></th>
+                            <th><input type="text" class="filter-input" data-filter="description" placeholder="Filter..."></th>
+                            <th>
+                                <select class="filter-select" data-filter="category">
+                                    <option value="">All</option>
+                                    <!-- Categories will be populated dynamically -->
+                                </select>
+                            </th>
+                            <th>
+                                <select class="filter-select" data-filter="status">
+                                    <option value="">All</option>
+                                    <!-- Statuses will be populated dynamically -->
+                                </select>
+                            </th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="status-tbody">
+                        <!-- Tasks will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Categories tab -->
+            <div id="categories-content" class="tab-content">
+                <!-- Category manager will be populated dynamically -->
+            </div>
+            
+            <!-- Settings tab -->
+            <div id="settings-content" class="tab-content">
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <h2>Categories</h2>
+                        <div class="settings-list" id="categories-list">
+                            <!-- Categories will be populated dynamically -->
+                        </div>
+                        <div class="settings-actions">
+                            <button id="add-category-btn" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add Category
+                            </button>
+                            <button id="manage-categories-btn" class="btn btn-secondary">
+                                <i class="fas fa-th-large"></i> Manage Categories
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h2>Statuses</h2>
+                        <div class="settings-list" id="statuses-list">
+                            <!-- Statuses will be populated dynamically -->
+                        </div>
+                        <button id="add-status-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Status
+                        </button>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h2>Data Management</h2>
+                        <div class="settings-actions">
+                            <button id="export-data-btn" class="btn btn-secondary">
+                                <i class="fas fa-download"></i> Export Data
+                            </button>
+                            <button id="import-data-btn" class="btn btn-secondary">
+                                <i class="fas fa-upload"></i> Import Data
+                            </button>
+                            <button id="load-demo-btn" class="btn btn-secondary">
+                                <i class="fas fa-vial"></i> Load Demo Data
+                            </button>
+                            <button id="clear-data-btn" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Clear All Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Task Modal -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modal-title">Add New Task</h2>
+            <form id="task-form">
+                <div class="form-group">
+                    <label for="task-id">Task ID:</label>
+                    <input type="text" id="task-id" class="modal-input" placeholder="CMINTDEV-###" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-description">Description:</label>
+                    <input type="text" id="task-description" class="modal-input" placeholder="Task description" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-category">Category:</label>
+                    <select id="task-category" class="modal-select" required>
+                        <!-- Categories will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-status">Status:</label>
+                    <select id="task-status" class="modal-select" required>
+                        <!-- Statuses will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-priority">Priority:</label>
+                    <select id="task-priority" class="modal-select">
+                        <option value="1">Very High</option>
+                        <option value="2">High</option>
+                        <option value="3" selected>Medium</option>
+                        <option value="4">Low</option>
+                        <option value="5">Very Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-notes">Notes:</label>
+                    <textarea id="task-notes" class="modal-textarea" rows="4"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancel-task" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" id="save-task" class="btn btn-primary">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Category Modal -->
+    <div id="category-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="category-modal-title">Add New Category</h2>
+            <form id="category-form">
+                <div class="form-group">
+                    <label for="category-name">Name:</label>
+                    <input type="text" id="category-name" class="modal-input" placeholder="Category name" required>
+                </div>
+                <div class="form-group">
+                    <label for="category-color">Color:</label>
+                    <input type="color" id="category-color" class="modal-input color-picker" value="#6366f1">
+                </div>
+                <div class="form-group">
+                    <label for="category-icon">Icon:</label>
+                    <select id="category-icon" class="modal-select">
+                        <option value="server">Server</option>
+                        <option value="shield">Shield</option>
+                        <option value="book">Book</option>
+                        <option value="users">Users</option>
+                        <option value="briefcase">Briefcase</option>
+                        <option value="lightbulb">Lightbulb</option>
+                        <option value="code">Code</option>
+                        <option value="database">Database</option>
+                        <option value="cog">Settings</option>
+                        <option value="chart-line">Chart</option>
+                    </select>
+                    <div class="icon-preview">
+                        <i class="fas fa-server"></i>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancel-category" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" id="save-category" class="btn btn-primary">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Status Modal -->
+    <div id="status-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="status-modal-title">Add New Status</h2>
+            <form id="status-form">
+                <div class="form-group">
+                    <label for="status-name">Name:</label>
+                    <input type="text" id="status-name" class="modal-input" placeholder="Status name" required>
+                </div>
+                <div class="form-group">
+                    <label for="status-color">Color:</label>
+                    <input type="color" id="status-color" class="modal-input color-picker" value="#64748b">
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancel-status" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" id="save-status" class="btn btn-primary">Save Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Notification container -->
+    <div id="notification-container"></div>
+    
+    <!-- Scripts -->
+    <script src="/js/api.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/app.js"></script>
+    
+    <!-- Added data management button handlers -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listener for load demo data button
+            document.getElementById('load-demo-btn').addEventListener('click', function() {
+                window.loadDemoData();
+            });
+            
+            // Add event listener for clear data button
+            document.getElementById('clear-data-btn').addEventListener('click', function() {
+                window.clearAllData();
+            });
+        });
+    </script>
+</body>
+</html>
