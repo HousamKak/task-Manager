@@ -29,14 +29,12 @@ function initUI() {
     showTaskModal();
   });
   
+  // Initialize "Add Status" button in the header
+  initStatusCardButton();
+  
   // Initialize "Add Category" button
   document.getElementById('add-category-btn').addEventListener('click', () => {
     showCategoryModal();
-  });
-  
-  // Initialize "Add Status" button
-  document.getElementById('add-status-btn').addEventListener('click', () => {
-    showStatusModal();
   });
   
   // Initialize task modal events
@@ -86,6 +84,9 @@ function initUI() {
   if (demoModeBtn) {
     demoModeBtn.addEventListener('click', toggleDemoMode);
   }
+  
+  // Initialize tooltips for action buttons
+  initTooltips();
 }
 
 // Switch between tabs
@@ -450,7 +451,386 @@ function closeCategoryModal() {
   currentCategoryId = null;
 }
 
-// Show status modal for creating or editing a status
+// Update the renderStatusCards function to enable reordering
+function renderStatusCards() {
+  const container = document.getElementById('status-cards-container');
+  if (!container) return;
+  
+  // Clear the container
+  container.innerHTML = '';
+  
+  // Sort statuses by display order
+  const sortedStatuses = [...statuses].sort((a, b) => 
+    (a.display_order || 0) - (b.display_order || 0)
+  );
+  
+  // Create a card for each status
+  sortedStatuses.forEach((status) => {
+    // Count tasks with this status that are not done
+    const statusTasks = tasks.filter(t => 
+      t.status_id === status.id && !t.is_done
+    ).length;
+    
+    // Create card element
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    card.setAttribute('data-status', status.name);
+    card.setAttribute('data-status-id', status.id);
+    card.style.cursor = 'pointer';
+    
+    // Set background and text colors based on status color
+    if (status.color) {
+      // Create a slightly lighter version of the color for the background
+      const colorObj = hexToRgb(status.color);
+      const bgColor = `rgba(${colorObj.r}, ${colorObj.g}, ${colorObj.b}, 0.1)`;
+      card.style.background = bgColor;
+      card.style.borderLeft = `4px solid ${status.color}`;
+    }
+    
+    // Add content
+    card.innerHTML = `
+      <h3>${status.name}</h3>
+      <div class="count" id="${status.name.toLowerCase().replace(/\s+/g, '-')}-count">
+        <span class="current-count" style="color: ${status.color || '#64748b'}">${statusTasks}</span>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn edit-btn" onclick="event.stopPropagation(); showStatusModal(${status.id})" title="Edit Status">
+          <i class="fas fa-pencil"></i>
+        </button>
+      </div>
+    `;
+    
+    // Add click event to filter by this status
+    card.addEventListener('click', () => {
+      filterByStatus(status.name);
+    });
+    
+    // Add to container
+    container.appendChild(card);
+  });
+  
+  // Initialize Sortable for status cards reordering
+  if (typeof Sortable !== 'undefined' && container.children.length > 0) {
+    const statusSortable = Sortable.create(container, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: async function(evt) {
+        // Update the display_order of moved statuses
+        const statusCards = document.querySelectorAll('#status-cards-container .stat-card');
+        
+        const updatedOrders = Array.from(statusCards).map((card, index) => {
+          const statusId = parseInt(card.getAttribute('data-status-id'), 10);
+          return { 
+            id: statusId, 
+            display_order: (index + 1) * 10 
+          };
+        });
+        
+        try {
+          // Update status orders in database
+          await saveStatusOrders(updatedOrders);
+          showNotification('Status order updated', 'success');
+        } catch (error) {
+          showNotification(`Error updating status order: ${error}`, 'error');
+        }
+      }
+    });
+  }
+}
+
+// Update the renderStatusManager function to enable reordering
+function renderStatusManager() {
+  const statusesList = document.getElementById('statuses-list');
+  
+  if (!statusesList) return;
+  
+  // Sort statuses by display order
+  const sortedStatuses = [...statuses].sort((a, b) => 
+    (a.display_order || 0) - (b.display_order || 0)
+  );
+  
+  let html = `
+    <div class="status-manager">
+      <h2>Manage Statuses</h2>
+      <p>Drag and drop statuses to reorder them. These changes will be reflected across the application.</p>
+      <div class="status-grid" id="status-sortable-list">
+  `;
+  
+  sortedStatuses.forEach(status => {
+    const tasksCount = tasks.filter(t => t.status_id === status.id).length;
+    
+    html += `
+      <div class="status-item sortable-item" data-status-id="${status.id}" style="border-left-color: ${status.color || '#64748b'}">
+        <span class="sortable-handle"><i class="fas fa-grip-lines"></i></span>
+        <div class="status-item-content">
+          <span class="status-item-color" style="background-color: ${status.color || '#64748b'}"></span>
+          <span class="status-item-name">${status.name}</span>
+          <span class="status-item-count">(${tasksCount} tasks)</span>
+        </div>
+        <div class="status-item-actions">
+          <button class="action-btn edit-btn" onclick="showStatusModal(${status.id})" title="Edit Status">
+            <i class="fas fa-pencil"></i>
+          </button>
+          <button class="action-btn delete-btn" onclick="deleteStatus(${status.id})" title="Delete Status">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+      <div class="settings-actions">
+        <button id="add-status-btn-manager" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Add Status
+        </button>
+        <span class="order-saved-message" id="status-order-saved">
+          <i class="fas fa-check-circle"></i> Order saved
+        </span>
+      </div>
+    </div>
+  `;
+  
+  statusesList.innerHTML = html;
+  
+  // Initialize the Add Status button in the manager
+  const addStatusBtnManager = document.getElementById('add-status-btn-manager');
+  if (addStatusBtnManager) {
+    addStatusBtnManager.addEventListener('click', () => {
+      showStatusModal();
+    });
+  }
+  
+  // Initialize Sortable.js for status reordering
+  initStatusSorting();
+}
+
+// Initialize Sortable.js for status reordering
+function initStatusSorting() {
+  const sortableList = document.getElementById('status-sortable-list');
+  if (typeof Sortable !== 'undefined' && sortableList) {
+    const statusSortable = Sortable.create(sortableList, {
+      animation: 150,
+      handle: '.sortable-handle',
+      ghostClass: 'sortable-ghost',
+      onEnd: async function(evt) {
+        // Update the display_order of moved statuses
+        const statusItems = document.querySelectorAll('#status-sortable-list .status-item');
+        
+        const updatedOrders = Array.from(statusItems).map((item, index) => {
+          const statusId = parseInt(item.getAttribute('data-status-id'), 10);
+          return { 
+            id: statusId, 
+            display_order: (index + 1) * 10 
+          };
+        });
+        
+        try {
+          // Update status orders in database
+          await saveStatusOrders(updatedOrders);
+          
+          // Show saved confirmation
+          const savedMsg = document.getElementById('status-order-saved');
+          if (savedMsg) {
+            savedMsg.classList.add('show');
+            setTimeout(() => {
+              savedMsg.classList.remove('show');
+            }, 2000);
+          }
+          
+          // Refresh status cards to reflect new order
+          await loadData(demoModeActive);
+        } catch (error) {
+          showNotification(`Error updating status order: ${error}`, 'error');
+        }
+      }
+    });
+  }
+}
+
+// Save status display orders to the database
+async function saveStatusOrders(statusOrders) {
+  try {
+    // Create an array of status update requests
+    const updatePromises = statusOrders.map(status => 
+      API.statuses.update(status.id, { display_order: status.display_order })
+    );
+    
+    // Execute all updates in parallel
+    await Promise.all(updatePromises);
+    
+    // Update local statuses array with new display orders
+    statusOrders.forEach(update => {
+      const statusIndex = statuses.findIndex(s => s.id === update.id);
+      if (statusIndex !== -1) {
+        statuses[statusIndex].display_order = update.display_order;
+      }
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving status orders:', error);
+    throw error;
+  }
+}
+
+// Generate status cards from the statuses array
+function renderStatusCards() {
+  const container = document.getElementById('status-cards-container');
+  if (!container) return;
+  
+  // Clear the container
+  container.innerHTML = '';
+  
+  // Sort statuses by display order
+  const sortedStatuses = [...statuses].sort((a, b) => 
+    (a.display_order || 0) - (b.display_order || 0)
+  );
+  
+  // Create a card for each status
+  sortedStatuses.forEach((status, index) => {
+    // Count tasks with this status that are not done
+    const statusTasks = tasks.filter(t => 
+      t.status_id === status.id && !t.is_done
+    ).length;
+    
+    // Create card element
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    card.setAttribute('data-status', status.name);
+    card.style.cursor = 'pointer';
+    
+    // Set background and text colors based on status color
+    if (status.color) {
+      // Create a slightly lighter version of the color for the background
+      const colorObj = hexToRgb(status.color);
+      const bgColor = `rgba(${colorObj.r}, ${colorObj.g}, ${colorObj.b}, 0.1)`;
+      card.style.background = bgColor;
+      card.style.borderLeft = `4px solid ${status.color}`;
+    }
+    
+    // Add content
+    card.innerHTML = `
+      <h3>${status.name}</h3>
+      <div class="count" id="${status.name.toLowerCase().replace(/\s+/g, '-')}-count">
+        <span class="current-count" style="color: ${status.color || '#64748b'}">${statusTasks}</span>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn edit-btn" onclick="event.stopPropagation(); showStatusModal(${status.id})" title="Edit Status">
+          <i class="fas fa-pencil"></i>
+        </button>
+      </div>
+    `;
+    
+    // Add click event to filter by this status
+    card.addEventListener('click', () => {
+      filterByStatus(status.name);
+    });
+    
+    // Add to container
+    container.appendChild(card);
+  });
+  
+  // Initialize Sortable for status cards reordering
+  if (typeof Sortable !== 'undefined' && container.children.length > 0) {
+    const statusSortable = Sortable.create(container, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: async function(evt) {
+        // Update the display_order of moved statuses
+        const statusCards = document.querySelectorAll('#status-cards-container .stat-card');
+        
+        const updatedOrders = Array.from(statusCards).map((card, index) => {
+          const statusId = parseInt(card.getAttribute('data-status-id'), 10);
+          return { 
+            id: statusId, 
+            display_order: (index + 1) * 10 
+          };
+        });
+        
+        try {
+          // Update status orders in database
+          await saveStatusOrders(updatedOrders);
+          showNotification('Status order updated', 'success');
+        } catch (error) {
+          showNotification(`Error updating status order: ${error}`, 'error');
+        }
+      }
+    });
+  }
+}
+
+// Helper function to convert hex color to RGB
+function hexToRgb(hex) {
+  // Remove # if present
+  hex = hex.replace(/^#/, '');
+  
+  // Parse the color components
+  let r, g, b;
+  if (hex.length === 3) {
+    r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
+    g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
+    b = parseInt(hex.charAt(2) + hex.charAt(2), 16);
+  } else {
+    r = parseInt(hex.substr(0, 2), 16);
+    g = parseInt(hex.substr(2, 2), 16);
+    b = parseInt(hex.substr(4, 2), 16);
+  }
+  
+  return { r, g, b };
+}
+
+// Update status counts in dynamic cards
+function updateDynamicStatusCounts() {
+  // Count tasks by status
+  const statusCounts = {
+    'total': 0
+  };
+  
+  // Initialize counts for all statuses
+  statuses.forEach(status => {
+    statusCounts[status.name.toLowerCase()] = 0;
+  });
+  
+  // Count active tasks
+  tasks.forEach(task => {
+    if (!task.is_done) {
+      statusCounts.total++;
+      
+      const statusName = task.status_name?.toLowerCase();
+      if (statusName && statusCounts.hasOwnProperty(statusName)) {
+        statusCounts[statusName]++;
+      }
+    }
+  });
+  
+  // Update total count
+  document.getElementById('total-count').querySelector('.current-count').textContent = statusCounts.total;
+  
+  // Update each status card count
+  statuses.forEach(status => {
+    const countElement = document.getElementById(`${status.name.toLowerCase().replace(/\s+/g, '-')}-count`);
+    if (countElement) {
+      const countSpan = countElement.querySelector('.current-count');
+      if (countSpan) {
+        countSpan.textContent = statusCounts[status.name.toLowerCase()] || 0;
+      }
+    }
+  });
+}
+
+// Initialize the "New Status" card button
+function initStatusCardButton() {
+  const addStatusBtn = document.getElementById('add-status-card-btn');
+  if (addStatusBtn) {
+    addStatusBtn.addEventListener('click', () => {
+      showStatusModal();
+    });
+  }
+}
+
+// Show status modal with enhanced color selection
 function showStatusModal(statusId = null) {
   const modal = document.getElementById('status-modal');
   const modalTitle = document.getElementById('status-modal-title');
@@ -458,6 +838,61 @@ function showStatusModal(statusId = null) {
   
   // Reset form
   form.reset();
+  
+  // Add color presets if the presets container doesn't exist yet
+  if (!document.getElementById('status-color-presets')) {
+    const colorField = document.getElementById('status-color').parentNode;
+    const presetsContainer = document.createElement('div');
+    presetsContainer.id = 'status-color-presets';
+    presetsContainer.className = 'color-presets';
+    
+    // Common status colors
+    const presetColors = [
+      '#64748b', // Gray (Backlog)
+      '#b45309', // Brown (On Hold)
+      '#1e40af', // Blue (To Do)
+      '#065f46', // Green (Dev Ongoing)
+      '#7c2d12', // Dark Orange (Blocked)
+      '#9333ea', // Purple (In Review)
+      '#b91c1c', // Red (Critical)
+      '#0369a1', // Light Blue (In Progress)
+      '#15803d', // Light Green (Complete)
+      '#92400e'  // Brown (Pending)
+    ];
+    
+    // Create preset buttons
+    presetColors.forEach(color => {
+      const preset = document.createElement('button');
+      preset.type = 'button';
+      preset.className = 'color-preset';
+      preset.style.backgroundColor = color;
+      preset.title = color;
+      preset.onclick = (e) => {
+        e.preventDefault(); // Prevent form submission
+        document.getElementById('status-color').value = color;
+        updateStatusColorPreview();
+      };
+      presetsContainer.appendChild(preset);
+    });
+    
+    // Add presets after the color input
+    colorField.appendChild(presetsContainer);
+    
+    // Add a color preview
+    const previewContainer = document.createElement('div');
+    previewContainer.className = 'status-preview-container';
+    previewContainer.innerHTML = `
+      <div class="status-preview">
+        <span class="preview-label">Preview:</span>
+        <span class="status-badge" id="status-preview-badge">Status</span>
+      </div>
+    `;
+    colorField.appendChild(previewContainer);
+    
+    // Add event listener to update preview when color changes
+    document.getElementById('status-color').addEventListener('input', updateStatusColorPreview);
+    document.getElementById('status-name').addEventListener('input', updateStatusColorPreview);
+  }
   
   // If editing existing status
   if (statusId) {
@@ -468,13 +903,44 @@ function showStatusModal(statusId = null) {
     if (status) {
       document.getElementById('status-name').value = status.name;
       document.getElementById('status-color').value = status.color || '#64748b';
+      updateStatusColorPreview();
     }
   } else {
     currentStatusId = null;
     modalTitle.textContent = 'Add New Status';
+    // Set a default color
+    document.getElementById('status-color').value = '#64748b';
+    updateStatusColorPreview();
   }
   
   modal.style.display = 'block';
+}
+
+// Update status preview in modal
+function updateStatusColorPreview() {
+  const color = document.getElementById('status-color').value;
+  const name = document.getElementById('status-name').value || 'Status';
+  const previewBadge = document.getElementById('status-preview-badge');
+  
+  if (previewBadge) {
+    previewBadge.textContent = name;
+    previewBadge.style.backgroundColor = lightenColor(color, 0.9);
+    previewBadge.style.color = color;
+  }
+}
+
+// Helper function to lighten a color for status badge backgrounds
+function lightenColor(color, factor) {
+  // Convert hex to rgb
+  const rgb = hexToRgb(color);
+  
+  // Lighten
+  const r = Math.round(rgb.r + (255 - rgb.r) * factor);
+  const g = Math.round(rgb.g + (255 - rgb.g) * factor);
+  const b = Math.round(rgb.b + (255 - rgb.b) * factor);
+  
+  // Convert back to hex
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 // Close status modal
@@ -494,146 +960,72 @@ function updateIconPreview() {
   }
 }
 
-// Handle task form submission
-async function handleTaskFormSubmit(event) {
-  event.preventDefault();
-  
-  try {
-    const taskData = {
-      id: document.getElementById('task-id').value,
-      description: document.getElementById('task-description').value,
-      category_id: parseInt(document.getElementById('task-category').value, 10),
-      status_id: parseInt(document.getElementById('task-status').value, 10),
-      priority: parseInt(document.getElementById('task-priority').value, 10),
-      notes: document.getElementById('task-notes').value,
-      is_demo: demoModeActive // Mark as demo task if demo mode is active
-    };
-    
-    if (currentTaskId) {
-      // Update existing task
-      await API.tasks.update(currentTaskId, taskData);
-      showNotification('Task updated successfully', 'success');
-    } else {
-      // Create new task
-      await API.tasks.create(taskData);
-      showNotification('Task created successfully', 'success');
-    }
-    
-    // Refresh data and UI
-    loadData(demoModeActive);
-    closeTaskModal();
-  } catch (error) {
-    showNotification(`Error: ${error}`, 'error');
-  }
-}
-
-// Handle category form submission
-async function handleCategoryFormSubmit(event) {
-  event.preventDefault();
-  
-  try {
-    const categoryData = {
-      name: document.getElementById('category-name').value,
-      color: document.getElementById('category-color').value,
-      icon: document.getElementById('category-icon').value
-    };
-    
-    if (currentCategoryId) {
-      // Update existing category
-      await API.categories.update(currentCategoryId, categoryData);
-      showNotification('Category updated successfully', 'success');
-    } else {
-      // Create new category
-      await API.categories.create(categoryData);
-      showNotification('Category created successfully', 'success');
-    }
-    
-    // Refresh data and UI
-    loadData(demoModeActive);
-    closeCategoryModal();
-  } catch (error) {
-    showNotification(`Error: ${error}`, 'error');
-  }
-}
-
-// Handle status form submission
-async function handleStatusFormSubmit(event) {
-  event.preventDefault();
-  
-  try {
-    const statusData = {
-      name: document.getElementById('status-name').value,
-      color: document.getElementById('status-color').value
-    };
-    
-    if (currentStatusId) {
-      // Update existing status
-      await API.statuses.update(currentStatusId, statusData);
-      showNotification('Status updated successfully', 'success');
-    } else {
-      // Create new status
-      await API.statuses.create(statusData);
-      showNotification('Status created successfully', 'success');
-    }
-    
-    // Refresh data and UI
-    loadData(demoModeActive);
-    closeStatusModal();
-  } catch (error) {
-    showNotification(`Error: ${error}`, 'error');
-  }
-}
-
-// Populate categories in settings
-function populateCategories() {
-  const categoriesList = document.getElementById('categories-list');
-  
-  if (!categoriesList) return;
-  
-  categoriesList.innerHTML = categories.map(category => `
-    <div class="settings-item">
-      <div class="settings-item-name">
-        <div class="settings-item-icon" style="background-color: ${category.color || '#6366f1'}">
-          <i class="fas fa-${category.icon || 'server'}"></i>
-        </div>
-        <span>${category.name}</span>
-      </div>
-      <div class="settings-item-actions">
-        <button class="action-btn edit-btn" onclick="showCategoryModal(${category.id})">
-          <i class="fas fa-pencil"></i>
-        </button>
-        <button class="action-btn delete-btn" onclick="deleteCategory(${category.id})">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// Populate statuses in settings
-function populateStatuses() {
+// Render status manager in settings
+function renderStatusManager() {
   const statusesList = document.getElementById('statuses-list');
   
   if (!statusesList) return;
   
-  statusesList.innerHTML = statuses.map(status => `
-    <div class="settings-item">
-      <div class="settings-item-name">
-        <div class="settings-item-icon" style="background-color: ${status.color || '#64748b'}">
-          <i class="fas fa-tag"></i>
+  // Sort statuses by display order
+  const sortedStatuses = [...statuses].sort((a, b) => 
+    (a.display_order || 0) - (b.display_order || 0)
+  );
+  
+  let html = `
+    <div class="status-manager">
+      <h2>Manage Statuses</h2>
+      <div class="status-grid">
+  `;
+  
+  sortedStatuses.forEach(status => {
+    const tasksCount = tasks.filter(t => t.status_id === status.id).length;
+    
+    html += `
+      <div class="status-item" data-status-id="${status.id}" style="border-left-color: ${status.color || '#64748b'}">
+        <div class="status-item-content">
+          <span class="status-sort-handle"><i class="fas fa-grip-lines"></i></span>
+          <span class="status-item-color" style="background-color: ${status.color || '#64748b'}"></span>
+          <span class="status-item-name">${status.name}</span>
+          <span class="status-item-count">(${tasksCount} tasks)</span>
         </div>
-        <span>${status.name}</span>
+        <div class="status-item-actions">
+          <button class="action-btn edit-btn" onclick="showStatusModal(${status.id})" title="Edit Status">
+            <i class="fas fa-pencil"></i>
+          </button>
+          <button class="action-btn delete-btn" onclick="deleteStatus(${status.id})" title="Delete Status">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
       </div>
-      <div class="settings-item-actions">
-        <button class="action-btn edit-btn" onclick="showStatusModal(${status.id})">
-          <i class="fas fa-pencil"></i>
-        </button>
-        <button class="action-btn delete-btn" onclick="deleteStatus(${status.id})">
-          <i class="fas fa-trash"></i>
-        </button>
+    `;
+  });
+  
+  html += `
       </div>
+      <button id="add-status-btn-manager" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Status
+      </button>
     </div>
-  `).join('');
+  `;
+  
+  statusesList.innerHTML = html;
+  
+  // Initialize the Add Status button in the manager
+  const addStatusBtnManager = document.getElementById('add-status-btn-manager');
+  if (addStatusBtnManager) {
+    addStatusBtnManager.addEventListener('click', () => {
+      showStatusModal();
+    });
+  }
+  
+  // Initialize drag-and-drop for ordering (would require Sortable.js or similar)
+  // This would be implemented similarly to category sorting
+}
+
+// Populate statuses in settings
+function populateStatuses() {
+  renderStatusManager();
+  populateStatusDropdowns();
 }
 
 // Delete a category
@@ -668,6 +1060,8 @@ async function deleteStatus(statusId) {
   try {
     await API.statuses.delete(statusId);
     showNotification('Status deleted successfully', 'success');
+    
+    // Refresh data and UI fully to update status cards
     loadData(demoModeActive);
   } catch (error) {
     showNotification(`Error: ${error}`, 'error');
@@ -1019,32 +1413,18 @@ async function deleteTask(taskId) {
 
 // Update status counts in stats cards
 function updateStatusCounts() {
-  // Count tasks by status
-  const statusCounts = {
-    'total': 0,
-    'backlog': 0,
-    'on hold': 0,
-    'to do': 0,
-    'dev ongoing': 0
-  };
+  // This function is now split between:
+  // 1. Updating the total count (kept here for backward compatibility)
+  // 2. updateDynamicStatusCounts() for the dynamic status cards
   
-  tasks.forEach(task => {
-    if (!task.is_done) {
-      statusCounts.total++;
-      
-      const statusName = task.status_name?.toLowerCase();
-      if (statusName && statusCounts.hasOwnProperty(statusName)) {
-        statusCounts[statusName]++;
-      }
-    }
-  });
+  // Count total active tasks
+  const totalActiveTasks = tasks.filter(task => !task.is_done).length;
   
-  // Update stat cards
-  document.getElementById('total-count').querySelector('.current-count').textContent = statusCounts.total;
-  document.getElementById('backlog-count').querySelector('.current-count').textContent = statusCounts['backlog'];
-  document.getElementById('on-hold-count').querySelector('.current-count').textContent = statusCounts['on hold'];
-  document.getElementById('to-do-count').querySelector('.current-count').textContent = statusCounts['to do'];
-  document.getElementById('dev-ongoing-count').querySelector('.current-count').textContent = statusCounts['dev ongoing'];
+  // Update total count in the first card
+  document.getElementById('total-count').querySelector('.current-count').textContent = totalActiveTasks;
+  
+  // Call the new function to update dynamic status cards
+  updateDynamicStatusCounts();
 }
 
 // Update tab counts
@@ -1199,7 +1579,7 @@ function renderTaskRows(tasks, tabName) {
         </td>
         <td class="task-id">${task.id}</td>
         <td>${task.description}</td>
-        ${tabName === 'all' || tabName === 'status' ? `<td>${task.category_name || 'Unknown'}</td>` : ''}
+        ${tabName === 'all' || tabName === 'status' ? `<td>${task.category_name || 'Unknown'}</td>` : ''}}
         <td><span class="status-badge ${statusClassName}">${status.name}</span></td>
         <td class="actions">
           <select class="status-select" data-task-id="${task.id}" 
@@ -1257,7 +1637,11 @@ async function loadData(includeDemoTasks = false) {
     renderTasks();
     populateCategories();
     populateStatuses();
-    updateStatusCounts();
+    
+    // Render dynamic status cards and update counts
+    renderStatusCards();
+    updateDynamicStatusCounts();
+    
     updateTabCounts();
     populateFilterDropdowns();
     

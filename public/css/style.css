@@ -45,6 +45,96 @@ h1 {
   letter-spacing: -0.02em;
 }
 
+/* Improved dashboard layout */
+.dashboard-top-section {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+}
+
+.summary-card {
+  flex: 1;
+  box-shadow: var(--shadow-md);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.status-section {
+  background: var(--bg-white);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.status-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px;
+  scrollbar-width: thin;
+}
+
+.status-cards::-webkit-scrollbar {
+  width: 6px;
+}
+
+.status-cards::-webkit-scrollbar-track {
+  background: var(--bg-light);
+  border-radius: 3px;
+}
+
+.status-cards::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 3px;
+}
+
+.status-cards .stat-card {
+  margin: 0;
+  min-height: 100px;
+  transition: all 0.2s ease;
+}
+
+.status-cards .stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.status-cards .stat-card h3 {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.status-cards .stat-card .count {
+  font-size: 28px;
+}
+
 /* Stats Cards */
 .stats-container {
   display: grid;
@@ -979,5 +1069,284 @@ tr.done td {
   
   .empty-message {
     font-size: 13px;
+  }
+}
+
+/* Add these styles to the end of your public/css/style.css file */
+
+/* Status card styling */
+.add-status-card {
+  background: linear-gradient(135deg, #64748b, #475569);
+  color: white;
+}
+
+.add-status-card h3 {
+  color: white;
+}
+
+.add-status-card .add-icon {
+  font-size: 24px;
+  margin: 8px 0;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.add-status-card .add-icon i {
+  font-size: 16px;
+}
+
+.stat-card {
+  position: relative;
+}
+
+#status-cards-container {
+  display: contents; /* This makes the container's children behave as if they were direct children of the parent grid */
+}
+
+/* Status management in settings */
+.status-manager {
+  margin-top: 20px;
+}
+
+.status-manager h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.status-item {
+  background: var(--bg-light);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-left: 4px solid var(--text-secondary);
+}
+
+.status-item-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.status-item-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  margin-right: 10px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.status-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.status-sort-handle {
+  cursor: move;
+  color: var(--text-secondary);
+  margin-right: 10px;
+}
+
+/* Task status options matching */
+.status-option-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Status modal enhancements */
+.color-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+
+.color-preset {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.color-preset:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.status-preview-container {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: var(--bg-light);
+  border-radius: 8px;
+}
+
+.status-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.preview-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+#status-preview-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Status badge dynamic styling */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.status-badge::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background-color: currentColor;
+}
+
+/* Sortable styles */
+.sortable-ghost {
+  opacity: 0.5;
+  background: var(--bg-light) !important;
+}
+
+.sortable-handle {
+  cursor: grab;
+  margin-right: 8px;
+  color: var(--text-secondary);
+}
+
+.sortable-handle:active {
+  cursor: grabbing;
+}
+
+.sortable-item {
+  transition: transform 0.2s ease;
+}
+
+.status-item, .category-card {
+  position: relative;
+}
+
+.status-item .sortable-handle,
+.category-card .sortable-handle {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
+
+.status-item:hover .sortable-handle,
+.category-card:hover .sortable-handle {
+  opacity: 0.8;
+}
+
+.status-item-content {
+  display: flex;
+  align-items: center;
+  padding-left: 25px;
+}
+
+.category-card {
+  padding-left: 35px;
+}
+
+/* Settings panels improvements */
+.status-manager, .category-manager {
+  background: var(--bg-white);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 30px;
+}
+
+.status-grid, .category-grid {
+  max-height: 450px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  padding: 4px;
+}
+
+/* Save order button */
+.order-saved-message {
+  display: none;
+  color: var(--secondary-color);
+  font-size: 14px;
+  margin-left: 10px;
+  align-items: center;
+}
+
+.order-saved-message i {
+  margin-right: 5px;
+}
+
+.order-saved-message.show {
+  display: flex;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Make tabs section and tables more compact on smaller screens */
+@media (max-width: 768px) {
+  .tabs-container {
+    padding: 4px;
+  }
+  
+  .tab {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  th, td {
+    padding: 12px 10px;
+    font-size: 13px;
+  }
+  
+  .status-cards {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 }

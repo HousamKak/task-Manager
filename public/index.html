@@ -14,42 +14,34 @@
     <div class="dashboard">
         <h1>Task Manager</h1>
 
-        <div class="stats-container">
-            <div class="stat-card" data-status="" style="cursor: pointer;">
-                <h3>Total Tasks</h3>
-                <div class="count" id="total-count">
-                    <span class="current-count">0</span>
+        <!-- CHANGED SECTION: Dashboard Top Section -->
+        <div class="dashboard-top-section">
+            <div class="summary-cards">
+                <div class="stat-card summary-card" data-status="" class="summary-card">
+                    <h3>Total Tasks</h3>
+                    <div class="count" id="total-count">
+                        <span class="current-count">0</span>
+                    </div>
+                </div>
+                <div class="stat-card add-task-card" id="add-task-btn">
+                    <h3>New Task</h3>
+                    <div class="add-icon">+</div>
                 </div>
             </div>
-            <div class="stat-card" data-status="DEV ONGOING" style="cursor: pointer;">
-                <h3>Dev Ongoing</h3>
-                <div class="count" id="dev-ongoing-count">
-                    <span class="current-count">0</span>
+
+            <div class="status-section">
+                <div class="section-header-row">
+                    <h2 class="section-title">Task Status</h2>
+                    <button id="add-status-btn-header" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Add Status
+                    </button>
                 </div>
-            </div>
-            <div class="stat-card" data-status="TO DO" style="cursor: pointer;">
-                <h3>To Do</h3>
-                <div class="count" id="to-do-count">
-                    <span class="current-count">0</span>
+                <div id="status-cards-container" class="status-cards">
+                    <!-- Dynamic status cards will be rendered here -->
                 </div>
-            </div>
-            <div class="stat-card" data-status="ON HOLD" style="cursor: pointer;">
-                <h3>On Hold</h3>
-                <div class="count" id="on-hold-count">
-                    <span class="current-count">0</span>
-                </div>
-            </div>
-            <div class="stat-card" data-status="BACKLOG" style="cursor: pointer;">
-                <h3>Backlog</h3>
-                <div class="count" id="backlog-count">
-                    <span class="current-count">0</span>
-                </div>
-            </div>
-            <div class="stat-card add-task-card" id="add-task-btn">
-                <h3>New Task</h3>
-                <div class="add-icon">+</div>
             </div>
         </div>
+        <!-- END CHANGED SECTION -->
         
         <div class="tabs-container">
             <button class="tab active" data-tab="all">
@@ -347,5 +339,6 @@
     <script src="/js/ui.js"></script>
     <script src="/js/app.js"></script>
     <script src="/js/mobile.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </body>
 </html>
