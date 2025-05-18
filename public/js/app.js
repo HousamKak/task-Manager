@@ -162,7 +162,6 @@ window.deleteCategory = ui.deleteCategory;
 window.deleteStatus = ui.deleteStatus;
 window.filterByStatus = ui.filterByStatus;
 window.updateIconPreview = ui.updateIconPreview;
-window.togglePinCategory = ui.togglePinCategory;
 window.showSettingsModal = ui.showSettingsModal;
 window.closeSettingsModal = ui.closeSettingsModal;
 window.switchSettingsTab = ui.switchSettingsTab;
