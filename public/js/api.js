@@ -126,6 +126,13 @@ window.API = (function() {
         return fetchWithTimeout(`${API_BASE_URL}/categories/${id}`, {
           method: 'DELETE'
         });
+      },
+      // Add bulk update for category reordering
+      bulkUpdate: function(categoriesData) {
+        return fetchWithTimeout(`${API_BASE_URL}/categories/bulk`, {
+          method: 'PUT', 
+          body: JSON.stringify(categoriesData)
+        });
       }
     },
     
@@ -152,6 +159,13 @@ window.API = (function() {
       delete: function(id) {
         return fetchWithTimeout(`${API_BASE_URL}/statuses/${id}`, {
           method: 'DELETE'
+        });
+      },
+      // Bulk update for statuses
+      bulkUpdate: function(statusesData) {
+        return fetchWithTimeout(`${API_BASE_URL}/statuses/bulk`, {
+          method: 'PUT', 
+          body: JSON.stringify(statusesData)
         });
       }
     },
