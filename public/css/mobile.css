@@ -1,0 +1,160 @@
+/* Mobile-specific styles */
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 16px 12px;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .dashboard-header h1 {
+    margin-bottom: 0;
+    font-size: 24px;
+  }
+  
+  .header-actions {
+    align-self: flex-end;
+  }
+  
+  .tab {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .tab-count {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+  
+  .status-cards-horizontal {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+  }
+  
+  .status-cards-horizontal .stat-card {
+    min-width: 120px;
+    scroll-snap-align: start;
+  }
+  
+  .status-cards-horizontal .stat-card h3 {
+    font-size: 12px;
+  }
+  
+  .status-cards-horizontal .stat-card .count {
+    font-size: 18px;
+  }
+  
+  .status-cards-horizontal .stat-card .current-count {
+    font-size: 18px;
+  }
+  
+  .modal-content {
+    width: 95%;
+    padding: 16px;
+    margin: 10px auto;
+  }
+  
+  th, td {
+    padding: 12px 8px;
+    font-size: 13px;
+  }
+  
+  .action-btn {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .status-select {
+    min-width: 100px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .form-actions button {
+    width: 100%;
+  }
+  
+  .settings-tabs {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  
+  .settings-tab {
+    flex: 1 0 calc(50% - 5px);
+    text-align: center;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  /* Add tap highlight color for better mobile UX */
+  a, button, .tab, .stat-card {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Improve mobile form inputs */
+  input, select, textarea {
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+  }
+  
+  /* Show scrollbar indicators on mobile */
+  .status-cards-horizontal:after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.7));
+    pointer-events: none;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 576px) {
+  .dashboard-header h1 {
+    font-size: 22px;
+  }
+  
+  .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .tabs-container {
+    padding: 6px;
+  }
+  
+  .tab {
+    flex: 0 0 calc(50% - 6px);
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  /* Adjust table for very small screens */
+  table {
+    table-layout: fixed;
+  }
+  
+  th:nth-child(1), td:nth-child(1) {
+    width: 40px;
+  }
+  
+  th:nth-child(2), td:nth-child(2) {
+    width: 80px;
+  }
+  
+  th:nth-last-child(1), td:nth-last-child(1) {
+    width: 80px;
+  }
+}
