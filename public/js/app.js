@@ -22,39 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
   console.log('Task Management System initialized');
 });
 
-// Initialize demo mode toggle
-function initDemoMode() {
-  const demoToggle = document.getElementById('demo-mode-toggle');
-  if (demoToggle) {
-    demoToggle.addEventListener('change', function() {
-      demoMode = this.checked;
-      
-      if (demoMode) {
-        loadDemoData();
-      } else {
-        // When turning off demo mode, reload regular data
-        clearDemoData().then(() => loadData());
-      }
-      
-      // Update UI indication
-      document.body.classList.toggle('demo-mode', demoMode);
-      
-      // Update notification
-      if (demoMode) {
-        showNotification('Demo mode activated. These tasks won\'t affect your real data.', 'info');
-      } else {
-        showNotification('Demo mode deactivated. Returned to your actual tasks.', 'info');
-      }
-    });
-  }
-  
-  // Initialize demo mode button in header
-  const demoModeBtn = document.getElementById('demo-mode-btn');
-  if (demoModeBtn) {
-    demoModeBtn.addEventListener('click', toggleDemoMode);
-  }
-}
-
 // Load all data from the API
 async function loadData() {
   try {
