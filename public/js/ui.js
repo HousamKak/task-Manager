@@ -508,15 +508,15 @@ function showTaskModal(taskId = null) {
     document.getElementById('demo-task-warning').style.display = 'none';
     
     // Generate next task ID
-    const cmintdevIds = tasks
-      .filter(t => t.id.startsWith('CMINTDEV-'))
-      .map(t => parseInt(t.id.replace('CMINTDEV-', ''), 10));
+    const projIds = tasks
+      .filter(t => t.id.startsWith('proj-'))
+      .map(t => parseInt(t.id.replace('proj-', ''), 10));
     
-    if (cmintdevIds.length > 0) {
-      const nextId = Math.max(...cmintdevIds) + 1;
-      document.getElementById('task-id').value = `CMINTDEV-${nextId}`;
+    if (projIds.length > 0) {
+      const nextId = Math.max(...projIds) + 1;
+      document.getElementById('task-id').value = `proj-${nextId}`;
     } else {
-      document.getElementById('task-id').value = 'CMINTDEV-1';
+      document.getElementById('task-id').value = '';
     }
   }
   
