@@ -12,42 +12,44 @@
 </head>
 <body>
     <div class="dashboard">
-        <h1>Task Manager</h1>
+        <div class="dashboard-header">
+            <h1>Task Manager</h1>
+            <div class="header-actions">
+                <button id="demo-mode-btn" class="btn-icon" title="Toggle Demo Mode">
+                    <i class="fas fa-flask"></i>
+                </button>
+                <button id="settings-btn" class="btn-icon" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
 
-        <div class="stats-container">
-            <div class="stat-card" data-status="" style="cursor: pointer;">
-                <h3>Total Tasks</h3>
-                <div class="count" id="total-count">
-                    <span class="current-count">0</span>
+        <!-- Dashboard Top Section -->
+        <div class="dashboard-top-section">
+            <div class="summary-cards">
+                <div class="stat-card summary-card" data-status="">
+                    <h3>Total Tasks</h3>
+                    <div class="count" id="total-count">
+                        <span class="current-count">0</span>
+                    </div>
+                </div>
+                <div class="stat-card add-task-card" id="add-task-btn">
+                    <h3>New Task</h3>
+                    <div class="add-icon">+</div>
                 </div>
             </div>
-            <div class="stat-card" data-status="DEV ONGOING" style="cursor: pointer;">
-                <h3>Dev Ongoing</h3>
-                <div class="count" id="dev-ongoing-count">
-                    <span class="current-count">0</span>
+
+            <!-- Redesigned Status Strip -->
+            <div class="status-strip">
+                <div class="status-strip-header">
+                    <h2 class="section-title">Task Status</h2>
+                    <button id="add-status-btn-header" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Add Status
+                    </button>
                 </div>
-            </div>
-            <div class="stat-card" data-status="TO DO" style="cursor: pointer;">
-                <h3>To Do</h3>
-                <div class="count" id="to-do-count">
-                    <span class="current-count">0</span>
+                <div id="status-cards-container" class="status-cards-horizontal">
+                    <!-- Dynamic status cards will be rendered here -->
                 </div>
-            </div>
-            <div class="stat-card" data-status="ON HOLD" style="cursor: pointer;">
-                <h3>On Hold</h3>
-                <div class="count" id="on-hold-count">
-                    <span class="current-count">0</span>
-                </div>
-            </div>
-            <div class="stat-card" data-status="BACKLOG" style="cursor: pointer;">
-                <h3>Backlog</h3>
-                <div class="count" id="backlog-count">
-                    <span class="current-count">0</span>
-                </div>
-            </div>
-            <div class="stat-card add-task-card" id="add-task-btn">
-                <h3>New Task</h3>
-                <div class="add-icon">+</div>
             </div>
         </div>
         
@@ -60,13 +62,6 @@
             <button class="tab" data-tab="status">
                 By Status
                 <span class="tab-count">0</span>
-            </button>
-            <button class="tab settings" data-tab="settings">
-                <i class="fas fa-cog"></i>
-            </button>
-            <button class="tab categories-tab" data-tab="categories">
-                <i class="fas fa-folder"></i>
-                <span>Categories</span>
             </button>
         </div>
         
@@ -157,69 +152,6 @@
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Categories tab -->
-            <div id="categories-content" class="tab-content">
-                <!-- Category manager will be populated dynamically -->
-            </div>
-            
-            <!-- Settings tab -->
-            <div id="settings-content" class="tab-content">
-                <div class="settings-container">
-                    <!-- Demo Mode Toggle -->
-                    <div class="settings-section">
-                        <h2>Demo Mode</h2>
-                        <div class="demo-toggle-container">
-                            <label class="switch">
-                                <input type="checkbox" id="demo-mode-toggle">
-                                <span class="slider"></span>
-                            </label>
-                            <label for="demo-mode-toggle">Enable Demo Mode</label>
-                        </div>
-                        <p>Demo mode allows you to experiment with sample tasks without affecting your actual data.</p>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h2>Categories</h2>
-                        <div class="settings-list" id="categories-list">
-                            <!-- Categories will be populated dynamically -->
-                        </div>
-                        <div class="settings-actions">
-                            <button id="add-category-btn" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Add Category
-                            </button>
-                            <button id="manage-categories-btn" class="btn btn-secondary">
-                                <i class="fas fa-th-large"></i> Manage Categories
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h2>Statuses</h2>
-                        <div class="settings-list" id="statuses-list">
-                            <!-- Statuses will be populated dynamically -->
-                        </div>
-                        <button id="add-status-btn" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Add Status
-                        </button>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h2>Data Management</h2>
-                        <div class="settings-actions">
-                            <button id="export-data-btn" class="btn btn-secondary">
-                                <i class="fas fa-download"></i> Export Data
-                            </button>
-                            <button id="import-data-btn" class="btn btn-secondary">
-                                <i class="fas fa-upload"></i> Import Data
-                            </button>
-                            <button id="clear-data-btn" class="btn btn-danger">
-                                <i class="fas fa-trash"></i> Clear All Data
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
     
@@ -237,7 +169,7 @@
             <form id="task-form">
                 <div class="form-group">
                     <label for="task-id">Task ID:</label>
-                    <input type="text" id="task-id" class="modal-input" placeholder="CMINTDEV-###" required>
+                    <input type="text" id="task-id" class="modal-input" placeholder="proj-###" required>
                 </div>
                 <div class="form-group">
                     <label for="task-description">Description:</label>
@@ -274,6 +206,93 @@
                     <button type="submit" id="save-task" class="btn btn-primary">Save Task</button>
                 </div>
             </form>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Settings</h2>
+            
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-settings-tab="general">General</button>
+                <button class="settings-tab" data-settings-tab="categories">Categories</button>
+                <button class="settings-tab" data-settings-tab="statuses">Statuses</button>
+                <button class="settings-tab" data-settings-tab="data">Data Management</button>
+            </div>
+            
+            <div class="settings-tab-content active" id="general-settings">
+                <!-- Demo Mode Toggle -->
+                <div class="settings-section">
+                    <h3>Demo Mode</h3>
+                    <div class="demo-toggle-container">
+                        <label class="switch">
+                            <input type="checkbox" id="demo-mode-toggle">
+                            <span class="slider"></span>
+                        </label>
+                        <label for="demo-mode-toggle">Enable Demo Mode</label>
+                    </div>
+                    <p>Demo mode allows you to experiment with sample tasks without affecting your actual data.</p>
+                </div>
+            </div>
+            
+            <div class="settings-tab-content" id="categories-settings">
+                <div class="settings-section">
+                    <div class="section-header-row">
+                        <h3>Categories</h3>
+                        <button id="add-category-btn" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i> Add Category
+                        </button>
+                    </div>
+                    <p>Drag and drop categories to reorder them. These changes will be reflected across the application.</p>
+                    <div id="categories-list" class="category-grid sortable">
+                        <!-- Categories will be populated dynamically -->
+                    </div>
+                    <div class="settings-actions">
+                        <span class="order-saved-message" id="category-order-saved">
+                            <i class="fas fa-check-circle"></i> Order saved
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-tab-content" id="statuses-settings">
+                <div class="settings-section">
+                    <div class="section-header-row">
+                        <h3>Statuses</h3>
+                        <button id="add-status-btn" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i> Add Status
+                        </button>
+                    </div>
+                    <p>Drag and drop statuses to reorder them. These changes will be reflected across the application.</p>
+                    <div id="statuses-list" class="status-grid sortable">
+                        <!-- Statuses will be populated dynamically -->
+                    </div>
+                    <div class="settings-actions">
+                        <span class="order-saved-message" id="status-order-saved">
+                            <i class="fas fa-check-circle"></i> Order saved
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-tab-content" id="data-settings">
+                <div class="settings-section">
+                    <h3>Data Management</h3>
+                    <div class="settings-actions">
+                        <button id="export-data-btn" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                        <button id="import-data-btn" class="btn btn-secondary">
+                            <i class="fas fa-upload"></i> Import Data
+                        </button>
+                        <button id="clear-data-btn" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Clear All Data
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -347,5 +366,6 @@
     <script src="/js/ui.js"></script>
     <script src="/js/app.js"></script>
     <script src="/js/mobile.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </body>
 </html>

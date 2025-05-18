@@ -22,33 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
   console.log('Task Management System initialized');
 });
 
-// Initialize demo mode toggle
-function initDemoMode() {
-  const demoToggle = document.getElementById('demo-mode-toggle');
-  if (demoToggle) {
-    demoToggle.addEventListener('change', function() {
-      demoMode = this.checked;
-      
-      if (demoMode) {
-        loadDemoData();
-      } else {
-        // When turning off demo mode, reload regular data
-        clearDemoData().then(() => loadData());
-      }
-      
-      // Update UI indication
-      document.body.classList.toggle('demo-mode', demoMode);
-      
-      // Update notification
-      if (demoMode) {
-        showNotification('Demo mode activated. These tasks won\'t affect your real data.', 'info');
-      } else {
-        showNotification('Demo mode deactivated. Returned to your actual tasks.', 'info');
-      }
-    });
-  }
-}
-
 // Load all data from the API
 async function loadData() {
   try {
@@ -64,24 +37,6 @@ async function loadData() {
 function showNotification(message, type = 'info') {
   ui.showNotification(message, type);
 }
-
-// Export functions for global access
-window.loadData = loadData;
-window.showNotification = showNotification;
-window.showTaskModal = ui.showTaskModal;
-window.closeTaskModal = ui.closeTaskModal;
-window.showCategoryModal = ui.showCategoryModal;
-window.closeCategoryModal = ui.closeCategoryModal;
-window.showStatusModal = ui.showStatusModal;
-window.closeStatusModal = ui.closeStatusModal;
-window.toggleTaskDone = ui.toggleTaskDone;
-window.changeTaskStatus = ui.changeTaskStatus;
-window.deleteTask = ui.deleteTask;
-window.deleteCategory = ui.deleteCategory;
-window.deleteStatus = ui.deleteStatus;
-window.filterByStatus = ui.filterByStatus;
-window.updateIconPreview = ui.updateIconPreview;
-window.togglePinCategory = ui.togglePinCategory;
 
 // Load demo data
 async function loadDemoData() {
@@ -125,17 +80,17 @@ async function clearDemoData() {
 }
 
 // Toggle demo mode
-window.toggleDemoMode = function() {
+function toggleDemoMode() {
   const demoToggle = document.getElementById('demo-mode-toggle');
   if (demoToggle) {
     demoToggle.checked = !demoToggle.checked;
     // Trigger the change event
     demoToggle.dispatchEvent(new Event('change'));
   }
-};
+}
 
 // Clear all data (for testing)
-window.clearAllData = async function() {
+async function clearAllData() {
   if (!confirm('This will DELETE ALL TASKS. This cannot be undone. Are you absolutely sure?')) {
     return;
   }
@@ -156,4 +111,26 @@ window.clearAllData = async function() {
     console.error('Error clearing data:', error);
     showNotification(`Failed to clear data: ${error}`, 'error');
   }
-};
+}
+
+// Export functions for global access
+window.loadData = loadData;
+window.showNotification = showNotification;
+window.showTaskModal = ui.showTaskModal;
+window.closeTaskModal = ui.closeTaskModal;
+window.showCategoryModal = ui.showCategoryModal;
+window.closeCategoryModal = ui.closeCategoryModal;
+window.showStatusModal = ui.showStatusModal;
+window.closeStatusModal = ui.closeStatusModal;
+window.toggleTaskDone = ui.toggleTaskDone;
+window.changeTaskStatus = ui.changeTaskStatus;
+window.deleteTask = ui.deleteTask;
+window.deleteCategory = ui.deleteCategory;
+window.deleteStatus = ui.deleteStatus;
+window.filterByStatus = ui.filterByStatus;
+window.updateIconPreview = ui.updateIconPreview;
+window.showSettingsModal = ui.showSettingsModal;
+window.closeSettingsModal = ui.closeSettingsModal;
+window.switchSettingsTab = ui.switchSettingsTab;
+window.clearAllData = clearAllData;
+window.toggleDemoMode = toggleDemoMode;
